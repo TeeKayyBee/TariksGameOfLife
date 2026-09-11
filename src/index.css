@@ -1,94 +1,119 @@
 /**
- * Root document base styling.
+ * Global styles for the Conway's Game of Life app.
+ * Dark mode is the default and only theme.
  */
-html{ background-color: #121212; color: #f0f0f0; margin: 0; font-family: sans-serif; }
 
-/**
- * Main application body layout.
- * 
- * @remarks
- * Sets up a centralized flex column layout with full viewport height.
- */
+/* Spacing scale used throughout the layout, so gaps stay consistent
+   instead of scattering ad-hoc margin values across selectors. */
+:root {
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --color-accent: #4ade80;
+  --color-danger: #ef4444;
+  --color-border: #333;
+}
+
 body {
   background-color: #121212;
   color: #f0f0f0;
   margin: 0;
   font-family: system-ui, sans-serif;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
   min-height: 100vh;
-  padding: 24px 16px;
+  padding: var(--space-lg) var(--space-md);
   box-sizing: border-box;
 }
 
 /**
- * Main title styling.
+ * No background/border here on purpose - heading, grid and controls
+ * sit directly on the page background. gap replaces individual
+ * margins between children, so vertical spacing stays consistent
+ * without needing a visible container around everything.
  */
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  max-width: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.app-icon {
+  width: 28px;
+  height: 28px;
+  fill: var(--color-accent);
+  flex-shrink: 0;
+}
+
 h1 {
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  margin-bottom: 24px;
+  font-family: 'Press Start 2P', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-size: clamp(0.85rem, 3vw, 1.3rem);
+  margin: 0;
   text-align: center;
+  line-height: 1.4;
 }
 
 /**
- * Grid container displaying the game board matrix.
- * 
- * @remarks
- * Uses dynamic grid dimensions based on the `--grid-size` CSS variable
- * and responsive cell sizes via `clamp()`.
+ * Grid container.
+ * --grid-size is set dynamically via inline style from the tileSize prop.
+ * --cell-size uses clamp() combined with vw AND vh so the grid scales
+ * correctly in both portrait (width-constrained) and landscape
+ * (height-constrained) orientations on mobile devices.
  */
 .grid {
-  --cell-size: clamp(16px, 6vw, 32px);
+  --cell-size: clamp(12px, min(6vw, 6vh), 32px);
   display: grid;
   grid-template-columns: repeat(var(--grid-size), var(--cell-size));
   grid-template-rows: repeat(var(--grid-size), var(--cell-size));
   width: fit-content;
-  border-top: 1px solid #333;
-  border-left: 1px solid #333;
   max-width: 95vw;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
 }
 
-/**
- * Individual grid cell element styles.
- */
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
   box-sizing: border-box;
-  border-right: 1px solid #333;
-  border-bottom: 1px solid #333;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-/**
- * Dead cell visual state.
- */
 .cell.dead {
   background-color: #1a1a1a;
 }
 
-/**
- * Alive cell visual state.
- */
 .cell.alive {
-  background-color: #4ade80;
+  background-color: var(--color-accent);
 }
 
-/**
- * Container wrapper for playback control buttons.
- */
+/* Wrapper around ActionButtons + TileSizeSelector. gap (not margin)
+   keeps the two rows evenly spaced, matching the rest of the layout. */
 .controls {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-sm);
   flex-wrap: wrap;
   justify-content: center;
 }
 
-/**
- * Base button interactive styles and state transitions.
- */
 button {
   background-color: #2a2a2a;
   color: #f0f0f0;
@@ -111,7 +136,7 @@ button:active:not(:disabled) {
 }
 
 button:focus-visible {
-  outline: 2px solid #4ade80;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -120,42 +145,65 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/**
- * Special destuctive action styling for the Reset button.
- */
-.controls button:last-child {
-  border-color: #ef4444;
-  color: #ef4444;
+/* Reset button styled as a "destructive" action, matching the
+   accent-based color language of the rest of the UI. */
+.action-buttons button:last-child {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
-.controls button:last-child:hover:not(:disabled) {
+.action-buttons button:last-child:hover:not(:disabled) {
   background-color: #ef444420;
-  border-color: #ef4444;
+  border-color: var(--color-danger);
 }
 
-/**
- * Simulation speed control bar layout.
- */
-.speed-control {
+/* Tile size dropdown - same visual language as the buttons above it. */
+.tile-size-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--space-sm);
   color: #ccc;
   font-size: 14px;
 }
 
-input[type="range"] {
-  accent-color: #4ade80;
+.tile-size-selector select {
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 10px;
 }
 
-/**
- * Mobile breakpoint adjustments for smaller screens.
- */
+/* Speed slider - same visual language as the other control rows. */
+.speed-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: #ccc;
+  font-size: 14px;
+}
+
+/* accent-color tints the native range input's thumb/track to match
+   the rest of the UI's green accent, instead of the browser default. */
+.speed-selector input[type="range"] {
+  accent-color: var(--color-accent);
+}
+
+/* Compact layout for short landscape viewports. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app {
+    gap: var(--space-md);
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+}
+
+/* Slightly tighter spacing/typography for small phone screens. */
 @media (max-width: 480px) {
   h1 {
     font-size: 1.3rem;
-    text-align: center;
   }
 
   button {

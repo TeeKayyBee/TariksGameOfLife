@@ -1,12 +1,11 @@
 /**
- * Represents a single cell within the Game of Life grid.
- * 
- * @param props - Component properties.
- * @param props.isAlive - Determines whether the cell is alive (true) or dead (false).
- * @param props.onClick - Callback function triggered when clicking on the cell.
- * @returns An interactive div element representing the visual state of the cell.
+ * Renders a single cell of the grid.
+ * Purely visual/interactive - has no knowledge of its own position in the grid.
  */
 
+/**
+ * @param {{ isAlive: boolean, onClick: () => void }} props
+ */
 function Cell({ isAlive, onClick }) {
   return (
     <div
