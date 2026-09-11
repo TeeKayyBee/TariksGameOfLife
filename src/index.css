@@ -66,17 +66,30 @@ h1 {
 /**
  * Grid container.
  * --grid-size is set dynamically via inline style from the tileSize prop.
- * --cell-size uses clamp() combined with vw AND vh so the grid scales
- * correctly in both portrait (width-constrained) and landscape
- * (height-constrained) orientations on mobile devices.
+ *
+ * --cell-size divides the available viewport space by the actual number
+ * of columns/rows (--grid-size), instead of using a fixed vw/vh
+ * percentage. This is essential once the grid size is user-selectable:
+ * a fixed percentage only happened to look right for the original
+ * 15x15 grid - at 25x25 the same per-cell size, multiplied by more
+ * columns, made the whole grid overflow the screen on mobile.
+ *
+ * min(90vw, 60vh) caps the total grid width/height to fit within the
+ * viewport in both portrait (width-constrained) and landscape
+ * (height-constrained) orientations, with some margin for padding.
+ * Dividing that by --grid-size then yields a per-cell size that always
+ * keeps the full grid on screen, regardless of how many cells there are.
  */
 .grid {
-  --cell-size: clamp(12px, min(6vw, 6vh), 32px);
+  --cell-size: clamp(10px, calc(min(90vw, 60vh) / var(--grid-size)), 32px);
   display: grid;
   grid-template-columns: repeat(var(--grid-size), var(--cell-size));
   grid-template-rows: repeat(var(--grid-size), var(--cell-size));
   width: fit-content;
   max-width: 95vw;
+  /* Only top/left border here; each cell draws its own right/bottom
+     border below. This avoids doubled/misaligned border lines that
+     can occur with gap-based grid lines. */
   border-top: 1px solid var(--color-border);
   border-left: 1px solid var(--color-border);
 }
