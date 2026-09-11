@@ -214,18 +214,10 @@ button:disabled {
   .app {
     gap: var(--space-md);
   }
-
-  h1 {
-    font-size: 1.1rem;
-  }
 }
 
 /* Slightly tighter spacing/typography for small phone screens. */
 @media (max-width: 480px) {
-  h1 {
-    font-size: 1.3rem;
-  }
-
   button {
     padding: 10px 14px;
     font-size: 13px;
