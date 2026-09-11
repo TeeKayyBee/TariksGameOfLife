@@ -46,9 +46,15 @@ body {
   gap: var(--space-sm);
 }
 
+/**
+ * Sized in em, relative to h1's font-size, so the icon scales in
+ * lockstep with the heading text on every screen size - instead of
+ * a fixed pixel value that looked oversized once the text shrank
+ * via clamp() on narrow phones.
+ */
 .app-icon {
-  width: 28px;
-  height: 28px;
+  width: 1.6em;
+  height: 1.6em;
   fill: var(--color-accent);
   flex-shrink: 0;
 }
@@ -57,11 +63,12 @@ h1 {
   font-family: 'Press Start 2P', system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: 0;
-  font-size: clamp(0.85rem, 3vw, 1.3rem);
+  font-size: clamp(0.65rem, 4vw, 1.3rem);
   margin: 0;
-  text-align: center;
-  line-height: 1.4;
+  line-height: 1;
+  white-space: nowrap;
 }
+
 
 /**
  * Grid container.
