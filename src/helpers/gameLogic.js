@@ -1,20 +1,20 @@
 /**
- * Die konstante Kantenlänge des quadratischen Spielfelds.
+ * The constant grid dimension of the square game board.
  * 
  * @remarks
- * Dieser Wert legt fest, dass das Spielfeld aus 15 Zeilen und 15 Spalten besteht
- * und steuert die Schleifendurchläufe bei der Grid-Generierung und Regelberechnung.
+ * This value specifies that the board consists of 15 rows and 15 columns
+ * and controls loop iterations during grid generation and rule calculation.
  */
 export const GRID_SIZE = 15;
 
 /**
- * Erstellt eine neue, leere Matrix (zweidimensionales Array) für das Spielfeld.
+ * Creates a new, empty matrix (two-dimensional array) for the game board.
  * 
  * @remarks
- * Alle Zellen werden über verschachtelte Arrays initial mit dem Zustand `0` (tot) befüllt. 
- * Die Dimension richtet sich nach der vordefinierten Kantenlänge `GRID_SIZE`.
+ * All cells are initially populated with the state `0` (dead) using nested arrays.
+ * The dimension is based on the predefined length `GRID_SIZE`.
  * 
- * @returns Eine neue Spielfeld-Matrix, in der alle Zellen den Wert `0` aufweisen.
+ * @returns A new game board matrix where all cells have a value of `0`.
  */
 export function createEmptyGrid() {
   const grid = [];
@@ -25,12 +25,12 @@ export function createEmptyGrid() {
 }
 
 /**
- * Zählt die lebenden Nachbarn einer bestimmten Zelle im Raster.
+ * Counts the living neighbors of a specific cell in the grid.
  * 
- * @param grid - Das aktuelle zweidimensionale Array (Spielfeld).
- * @param row - Die Y-Koordinate (Zeile) der Zielzelle.
- * @param col - Die X-Koordinate (Spalte) der Zielzelle.
- * @returns Die Anzahl der lebenden Nachbarzellen (Wert zwischen 0 und 8).
+ * @param grid - The current two-dimensional array (game board).
+ * @param row - The Y-coordinate (row) of the target cell.
+ * @param col - The X-coordinate (column) of the target cell.
+ * @returns The number of living neighbor cells (value between 0 and 8).
  */
 function countAliveNeighbors(grid, row, col) {
   const neighborOffsets = [
@@ -54,17 +54,17 @@ function countAliveNeighbors(grid, row, col) {
 }
 
 /**
- * Berechnet die nächste Generation des Spielfelds unter der Anwendung der Conway-Regeln.
+ * Computes the next generation of the game board applying Conway's rules.
  * 
  * @remarks
- * Die Funktion iteriert durch jede Koordinate des Rasters, ermittelt die lebenden Nachbarn 
- * über `countAliveNeighbors` und wendet folgende Logik an:
- * - Eine lebende Zelle bleibt mit 2 oder 3 Nachbarn am Leben.
- * - Eine tote Zelle wird mit exakt 3 Nachbarn neu geboren.
- * - Alle anderen Zellen werden in der neuen Matrix als `0` (tot) markiert.
+ * The function iterates through each coordinate of the grid, determines living neighbors 
+ * via `countAliveNeighbors`, and applies the following logic:
+ * - A living cell remains alive with 2 or 3 neighbors.
+ * - A dead cell becomes alive with exactly 3 neighbors.
+ * - All other cells are marked as `0` (dead) in the new matrix.
  * 
- * @param grid - Das aktuelle Spielfeld-Raster, auf dessen Basis die Berechnung stattfindet.
- * @returns Eine vollständig neue Matrix, die den nachfolgenden Zustand der Simulation darstellt.
+ * @param grid - The current game board grid used as the basis for computation.
+ * @returns A completely new matrix representing the subsequent state of the simulation.
  */
 export function computeNextGeneration(grid) {
   const newGrid = createEmptyGrid();
@@ -88,14 +88,14 @@ export function computeNextGeneration(grid) {
 }
 
 /**
- * Überprüft das übergebene Raster auf das Vorhandensein von lebenden Zellen.
+ * Checks the given grid for the presence of living cells.
  * 
  * @remarks
- * Verwendet die Array-Methode `some`, um die Zeilen und Zellen effizient zu durchsuchen. 
- * Bricht ab und gibt `true` zurück, sobald die erste lebende Zelle (`1`) gefunden wird.
+ * Uses the `some` array method to efficiently scan rows and cells.
+ * Short-circuits and returns `true` as soon as the first living cell (`1`) is found.
  * 
- * @param grid - Die zu überprüfende Spielfeld-Matrix.
- * @returns Gibt `true` zurück, wenn mindestens eine aktive Zelle existiert, andernfalls `false`.
+ * @param grid - The game board matrix to check.
+ * @returns Returns `true` if at least one active cell exists, otherwise `false`.
  */
 export function hasAliveCells(grid) {
   return grid.some(row => row.some(cell => cell === 1));

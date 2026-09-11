@@ -15,24 +15,23 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-
-markdown
+---
 
 /**
- * Paket-Konfiguration für die "game-of-life" React-Applikation.
+ * Package configuration for the "game-of-life" React application.
  * 
- * @private true - Verhindert das versehentliche Veröffentlichen der App im npm-Registry.
+ * @private true - Prevents accidental publishing of the app to the npm registry.
  * @version 0.0.0
  * 
  * @section Scripts
- * - `npm run dev`: Startet den lokalen Vite-Entwicklungsserver.
- * - `npm run build`: Kompiliert das Projekt über Vite für die Produktion.
- * - `npm run lint`: Analysiert den Code mittels ESLint auf Fehler.
- * - `npm run preview`: Startet einen lokalen Server, um den Produktions-Build (`dist`) zu testen.
+ * - `npm run dev`: Starts the local Vite development server.
+ * - `npm run build`: Compiles the project using Vite for production.
+ * - `npm run lint`: Analyzes the codebase for errors using ESLint.
+ * - `npm run preview`: Launches a local server to test the production build (`dist`).
  * 
  * @section Dependencies
- * Basiert auf **React 19** (`react`, `react-dom`).
+ * Powered by **React 19** (`react`, `react-dom`).
  * 
  * @section DevDependencies
- * Nutzt **Vite 8** als Bundler und **ESLint 10** für die statische Code-Analyse.
+ * Uses **Vite 8** as the bundler and **ESLint 10** for static code analysis.
  */

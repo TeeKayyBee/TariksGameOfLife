@@ -1,10 +1,10 @@
 /**
- * Repräsentiert eine einzelne Zelle im Game of Life Raster.
+ * Represents a single cell within the Game of Life grid.
  * 
- * @param props - Die Props der Komponente.
- * @param props.isAlive - Bestimmt, ob die Zelle lebendig (true) oder tot (false) ist.
- * @param props.onClick - Die Callback-Funktion, die bei einem Klick auf die Zelle ausgelöst wird.
- * @returns Ein interaktives div-Element, das den visuellen Zustand der Zelle darstellt.
+ * @param props - Component properties.
+ * @param props.isAlive - Determines whether the cell is alive (true) or dead (false).
+ * @param props.onClick - Callback function triggered when clicking on the cell.
+ * @returns An interactive div element representing the visual state of the cell.
  */
 
 function Cell({ isAlive, onClick }) {

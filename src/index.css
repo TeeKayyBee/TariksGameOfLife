@@ -1,5 +1,14 @@
+/**
+ * Root document base styling.
+ */
 html{ background-color: #121212; color: #f0f0f0; margin: 0; font-family: sans-serif; }
 
+/**
+ * Main application body layout.
+ * 
+ * @remarks
+ * Sets up a centralized flex column layout with full viewport height.
+ */
 body {
   background-color: #121212;
   color: #f0f0f0;
@@ -13,12 +22,23 @@ body {
   box-sizing: border-box;
 }
 
+/**
+ * Main title styling.
+ */
 h1 {
   font-weight: 600;
   letter-spacing: -0.5px;
   margin-bottom: 24px;
   text-align: center;
 }
+
+/**
+ * Grid container displaying the game board matrix.
+ * 
+ * @remarks
+ * Uses dynamic grid dimensions based on the `--grid-size` CSS variable
+ * and responsive cell sizes via `clamp()`.
+ */
 .grid {
   --cell-size: clamp(16px, 6vw, 32px);
   display: grid;
@@ -30,6 +50,9 @@ h1 {
   max-width: 95vw;
 }
 
+/**
+ * Individual grid cell element styles.
+ */
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -38,14 +61,23 @@ h1 {
   border-bottom: 1px solid #333;
 }
 
+/**
+ * Dead cell visual state.
+ */
 .cell.dead {
   background-color: #1a1a1a;
 }
 
+/**
+ * Alive cell visual state.
+ */
 .cell.alive {
   background-color: #4ade80;
 }
 
+/**
+ * Container wrapper for playback control buttons.
+ */
 .controls {
   display: flex;
   gap: 10px;
@@ -54,6 +86,9 @@ h1 {
   justify-content: center;
 }
 
+/**
+ * Base button interactive styles and state transitions.
+ */
 button {
   background-color: #2a2a2a;
   color: #f0f0f0;
@@ -85,6 +120,9 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/**
+ * Special destuctive action styling for the Reset button.
+ */
 .controls button:last-child {
   border-color: #ef4444;
   color: #ef4444;
@@ -95,6 +133,9 @@ button:disabled {
   border-color: #ef4444;
 }
 
+/**
+ * Simulation speed control bar layout.
+ */
 .speed-control {
   display: flex;
   align-items: center;
@@ -108,6 +149,9 @@ input[type="range"] {
   accent-color: #4ade80;
 }
 
+/**
+ * Mobile breakpoint adjustments for smaller screens.
+ */
 @media (max-width: 480px) {
   h1 {
     font-size: 1.3rem;

@@ -2,14 +2,13 @@ import Cell from './Cell';
 import { GRID_SIZE } from '../helpers/gameLogic';
 
 /**
- * Das Spielfeld-Raster, das alle Zellen in einer Matrix-Struktur rendert.
+ * The game board grid rendering all cells in a matrix structure.
  * 
- * @param props - Die Props der Komponente.
- * @param props.grid - Das zweidimensionale Array, welches den aktuellen Zustand aller Zellen enthält.
- * @param props.onCellClick - Die Callback-Funktion, die beim Klick auf eine spezifische Zelle mit deren Koordinaten aufgerufen wird.
- * @returns Das gerenderte Raster mit dynamisch berechneter CSS-Spielfeldgröße.
+ * @param props - Component properties.
+ * @param props.grid - Two-dimensional array containing the current state of all cells.
+ * @param props.onCellClick - Callback function invoked on cell click with its respective coordinates.
+ * @returns The rendered grid container with dynamically calculated CSS size properties.
  */
-
 function Grid({ grid, onCellClick }) {
   return (
     <div

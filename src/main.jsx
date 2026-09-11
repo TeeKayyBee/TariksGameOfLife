@@ -4,12 +4,12 @@ import './index.css'
 import App from './components/App.jsx'
 
 /**
- * Der Haupteinstiegspunkt für die React-Anwendung.
+ * Main entry point for the React application.
  * 
  * @remarks
- * Diese Datei holt sich das DOM-Element mit der ID `root`, initialisiert die
- * React 19 Root-API und rendert die Anwendung im `StrictMode`, um potenzielle
- * Probleme und Nebenwirkungen während der Entwicklung frühzeitig zu erkennen.
+ * This file retrieves the DOM element with the ID `root`, initializes the
+ * React 19 Root API, and renders the application inside `StrictMode` to detect
+ * potential issues and side effects early during development.
  */
 
 createRoot(document.getElementById('root')).render(

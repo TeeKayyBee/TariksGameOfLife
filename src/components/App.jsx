@@ -3,15 +3,15 @@ import { createEmptyGrid, computeNextGeneration, hasAliveCells } from '../helper
 import Grid from './Grid';
 
 /**
- * Die Wurzelkomponente (Root Component) der Game of Life Anwendung.
+ * Root Component of the Game of Life application.
  * 
  * @remarks
- * Diese Komponente dient als Layout-Container und verwaltet den globalen Zustand
- * der Simulation. Sie koordiniert das Spielfeld (Grid), die Kontrolltasten
- * (Start, Stopp, Reset) und die Anzeige der aktuellen Generation.
+ * Serves as the main layout container and manages the global state
+ * of the simulation. It coordinates the grid board, action controls
+ * (Start, Stop, Reset, Step), and playback parameters.
  * 
- * @param props - Die React-Props der Komponente (aktuell keine standardmäßig übergeben).
- * @returns Die gerenderte App-Oberfläche als JSX-Element structure.
+ * @param props - React props passed to the component (none by default).
+ * @returns The rendered application interface as a JSX element structure.
  */
 
 function App() {
@@ -22,10 +22,10 @@ function App() {
   const [speed, setSpeed] = useState(300);
 
   /**
-   * Invertiert den Zustand einer einzelnen Zelle (lebend/tot) beim Klicken.
+   * Toggles the state of a single cell (alive/dead) when clicked.
    * 
-   * @param row - Der Zeilenindex der angeklickten Zelle.
-   * @param col - Der Spaltenindex der angeklickten Zelle.
+   * @param row - The row index of the clicked cell.
+   * @param col - The column index of the clicked cell.
    */
   function handleCellClick(row, col) {
     setGrid(prevGrid => {
@@ -36,7 +36,7 @@ function App() {
   }
 
   /**
-   * Berechnet manuell die nächste Generation und fügt den aktuellen Zustand der Historie hinzu.
+   * Manually computes the next generation and pushes the current state to history.
    */
   function handleStepForward() {
     if (!hasAliveCells(grid)) return;
@@ -45,7 +45,7 @@ function App() {
   }
 
   /**
-   * Versetzt das Spielfeld in den vorherigen Zustand zurück, sofern Einträge in der Historie existieren.
+   * Reverts the game board to its previous state if history entries exist.
    */
   function handleStepBackward() {
     setHistory(prevHistory => {
@@ -59,7 +59,7 @@ function App() {
   }
 
   /**
-   * Stoppt die laufende Simulation, leert das Spielfeld und setzt die Historie zurück.
+   * Stops the ongoing simulation, clears the game board, and resets history.
    */
   function handleReset() {
     setIsRunning(false);
@@ -68,11 +68,11 @@ function App() {
   }
 
   /**
-   * Verwaltet den Simulations-Timer (Interval), der die Generationen automatisch weiterschaltet.
+   * Manages the simulation interval timer that automatically advances generations.
    * 
    * @remarks
-   * Der Effekt startet oder stoppt das Intervall basierend auf dem `isRunning`-Status 
-   * und aktualisiert die Abspielgeschwindigkeit anhand der `speed`-Variable.
+   * Starts or stops the interval based on the `isRunning` state flag
+   * and updates playback speed according to the `speed` variable.
    */
   useEffect(() => {
     if(isRunning) {
@@ -90,8 +90,8 @@ function App() {
   }, [isRunning, grid]);
 
   /**
-   * Überprüft kontinuierlich, ob noch lebende Zellen auf dem Spielfeld existieren.
-   * Stoppt die automatische Simulation selbstständig, sobald das gesamte Spielfeld ausgestorben ist.
+   * Continuously monitors whether living cells remain on the grid.
+   * Automatically stops the simulation once all cells die out.
    */
   useEffect(() => {
     if (isRunning && !hasAliveCells(grid)) {
