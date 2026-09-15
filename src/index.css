@@ -3,8 +3,6 @@
  * Dark mode is the default and only theme.
  */
 
-/* Spacing scale used throughout the layout, so gaps stay consistent
-   instead of scattering ad-hoc margin values across selectors. */
 :root {
   --space-sm: 8px;
   --space-md: 16px;
@@ -26,12 +24,6 @@ body {
   box-sizing: border-box;
 }
 
-/**
- * No background/border here on purpose - heading, grid and controls
- * sit directly on the page background. gap replaces individual
- * margins between children, so vertical spacing stays consistent
- * without needing a visible container around everything.
- */
 .app {
   display: flex;
   flex-direction: column;
@@ -46,12 +38,6 @@ body {
   gap: var(--space-sm);
 }
 
-/**
- * Sized in em, relative to h1's font-size, so the icon scales in
- * lockstep with the heading text on every screen size - instead of
- * a fixed pixel value that looked oversized once the text shrank
- * via clamp() on narrow phones.
- */
 .app-icon {
   width: 1.6em;
   height: 1.6em;
@@ -69,23 +55,11 @@ h1 {
   white-space: nowrap;
 }
 
-
 /**
- * Grid container.
- * --grid-size is set dynamically via inline style from the tileSize prop.
- *
- * --cell-size divides the available viewport space by the actual number
- * of columns/rows (--grid-size), instead of using a fixed vw/vh
- * percentage. This is essential once the grid size is user-selectable:
- * a fixed percentage only happened to look right for the original
- * 15x15 grid - at 25x25 the same per-cell size, multiplied by more
- * columns, made the whole grid overflow the screen on mobile.
- *
- * min(90vw, 60vh) caps the total grid width/height to fit within the
- * viewport in both portrait (width-constrained) and landscape
- * (height-constrained) orientations, with some margin for padding.
- * Dividing that by --grid-size then yields a per-cell size that always
- * keeps the full grid on screen, regardless of how many cells there are.
+ * Grid container. --grid-size set dynamically via inline style.
+ * --cell-size divides available viewport space by the actual number
+ * of columns/rows, so the grid always fits on screen regardless of
+ * the selected tile size.
  */
 .grid {
   --cell-size: clamp(10px, calc(min(90vw, 60vh) / var(--grid-size)), 32px);
@@ -94,19 +68,26 @@ h1 {
   grid-template-rows: repeat(var(--grid-size), var(--cell-size));
   width: fit-content;
   max-width: 95vw;
-  /* Only top/left border here; each cell draws its own right/bottom
-     border below. This avoids doubled/misaligned border lines that
-     can occur with gap-based grid lines. */
   border-top: 1px solid var(--color-border);
   border-left: 1px solid var(--color-border);
 }
 
+/**
+ * Cells are native <button> elements now (for accessibility), so
+ * default button chrome (padding, border-radius) is reset here.
+ */
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
   box-sizing: border-box;
+  border: none;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .cell.dead {
@@ -117,8 +98,6 @@ h1 {
   background-color: var(--color-accent);
 }
 
-/* Wrapper around ActionButtons + TileSizeSelector. gap (not margin)
-   keeps the two rows evenly spaced, matching the rest of the layout. */
 .controls {
   display: flex;
   flex-direction: column;
@@ -146,12 +125,14 @@ button {
   transition: background-color 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
 }
 
-button:hover:not(:disabled) {
+/* :not(.cell) excludes grid cells from this generic button hover/active
+   styling, since cells are buttons too but have their own color logic. */
+button:hover:not(:disabled):not(.cell) {
   background-color: #3a3a3a;
   border-color: #666;
 }
 
-button:active:not(:disabled) {
+button:active:not(:disabled):not(.cell) {
   transform: scale(0.97);
 }
 
@@ -165,8 +146,6 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Reset button styled as a "destructive" action, matching the
-   accent-based color language of the rest of the UI. */
 .action-buttons button:last-child {
   border-color: var(--color-danger);
   color: var(--color-danger);
@@ -177,7 +156,6 @@ button:disabled {
   border-color: var(--color-danger);
 }
 
-/* Tile size dropdown - same visual language as the buttons above it. */
 .tile-size-selector {
   display: flex;
   align-items: center;
@@ -194,7 +172,6 @@ button:disabled {
   padding: 6px 10px;
 }
 
-/* Speed slider - same visual language as the other control rows. */
 .speed-selector {
   display: flex;
   align-items: center;
@@ -203,20 +180,42 @@ button:disabled {
   font-size: 14px;
 }
 
-/* accent-color tints the native range input's thumb/track to match
-   the rest of the UI's green accent, instead of the browser default. */
 .speed-selector input[type="range"] {
   accent-color: var(--color-accent);
 }
 
-/* Compact layout for short landscape viewports. */
+/* Demo admin panel (AdminSettings.jsx) - not yet linked into the app. */
+.admin-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  background-color: #1a1a1a;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-md);
+  max-width: 300px;
+}
+
+.admin-settings input {
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.admin-settings-error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin: 0;
+}
+
 @media (orientation: landscape) and (max-height: 500px) {
   .app {
     gap: var(--space-md);
   }
 }
 
-/* Slightly tighter spacing/typography for small phone screens. */
 @media (max-width: 480px) {
   button {
     padding: 10px 14px;

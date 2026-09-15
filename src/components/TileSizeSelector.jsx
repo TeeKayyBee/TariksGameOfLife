@@ -1,14 +1,10 @@
 /**
- * Dropdown for selecting the grid size from a fixed list
- * of options (see TILE_SIZE_OPTIONS in constants.js).
+ * Dropdown for selecting the grid size. Options and label text are
+ * read from constantsStore, so an admin can change them at runtime.
  */
 
-import { TILE_SIZE_OPTIONS } from '../constants';
+import { getConstant } from '../store/constantsStore';
 
-/**
- * Renders a single selectable option for a grid size.
- * @param {number} size
- */
 function renderOption(size) {
   return (
     <option key={size} value={size}>
@@ -24,15 +20,18 @@ function renderOption(size) {
  * }} props
  */
 function TileSizeSelector({ tileSize, onTileSizeChange }) {
+  const tileSizeOptions = getConstant('TILE_SIZE_OPTIONS');
+  const uiText = getConstant('UI_TEXT');
+
   function handleChange(event) {
     onTileSizeChange(Number(event.target.value));
   }
 
   return (
     <div className="tile-size-selector">
-      <label htmlFor="tile-size">Rastergröße</label>
+      <label htmlFor="tile-size">{uiText.tileSizeLabel}</label>
       <select id="tile-size" value={tileSize} onChange={handleChange}>
-        {TILE_SIZE_OPTIONS.map(renderOption)}
+        {tileSizeOptions.map(renderOption)}
       </select>
     </div>
   );

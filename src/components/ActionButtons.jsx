@@ -1,7 +1,11 @@
 /**
  * Contains all control buttons for the simulation
  * (step backward/forward, start, stop, randomize, reset).
+ * Button labels are read from constantsStore, so an admin can
+ * change them at runtime.
  */
+
+import { getConstant } from '../store/constantsStore';
 
 /**
  * @param {{
@@ -27,25 +31,27 @@ function ActionButtons({
   onRandomize,
   onReset,
 }) {
+  const uiText = getConstant('UI_TEXT');
+
   return (
     <div className="action-buttons">
       <button onClick={onStepBackward} disabled={!canStepBackward || isRunning}>
-        Schritt zurück
+        {uiText.stepBackward}
       </button>
       <button onClick={onStepForward} disabled={isRunning || !canStepForward}>
-        Schritt vor
+        {uiText.stepForward}
       </button>
       <button onClick={onStart} disabled={isRunning || !canStepForward}>
-        Start
+        {uiText.start}
       </button>
       <button onClick={onStop} disabled={!isRunning}>
-        Stop
+        {uiText.stop}
       </button>
       <button onClick={onRandomize}>
-        Zufall
+        {uiText.randomize}
       </button>
       <button onClick={onReset}>
-        Reset
+        {uiText.reset}
       </button>
     </div>
   );

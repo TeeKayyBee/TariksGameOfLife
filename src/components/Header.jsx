@@ -1,8 +1,14 @@
 /**
- * Displays the app title together with a small glider-shaped icon,
- * mirroring the pattern used in the PWA app icons and favicon.
+ * Displays the app title together with a small glider-shaped icon.
+ * The title text is read from constantsStore, so an admin can
+ * change it at runtime.
  */
+
+import { getConstant } from '../store/constantsStore';
+
 function Header() {
+  const uiText = getConstant('UI_TEXT');
+
   return (
     <div className="app-header">
       <svg
@@ -17,7 +23,7 @@ function Header() {
         <rect x="1" y="2" width="1" height="1" />
         <rect x="2" y="2" width="1" height="1" />
       </svg>
-      <h1>Tarik's Game of Life</h1>
+      <h1>{uiText.appTitle}</h1>
     </div>
   );
 }

@@ -8,13 +8,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TileSizeSelector from '../TileSizeSelector';
-import { TILE_SIZE_OPTIONS } from '../../constants';
+import { getConstant } from '../../store/constantsStore';
 
 describe('TileSizeSelector', function TileSizeSelectorTests() {
-  it('renders one option for each entry in TILE_SIZE_OPTIONS', function testOptionsRendered() {
+  it('renders one option for each entry in the store\'s TILE_SIZE_OPTIONS', function testOptionsRendered() {
     render(<TileSizeSelector tileSize={15} onTileSizeChange={function noop() {}} />);
 
-    TILE_SIZE_OPTIONS.forEach(function checkOptionExists(size) {
+    getConstant('TILE_SIZE_OPTIONS').forEach(function checkOptionExists(size) {
       expect(screen.getByText(`${size} x ${size}`)).toBeInTheDocument();
     });
   });

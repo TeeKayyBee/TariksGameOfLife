@@ -13,11 +13,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../App';
-import { DEFAULT_SIMULATION_SPEED_MS } from '../../constants';
+import { getConstant, resetConstantsForTesting } from '../../store/constantsStore';
 
 describe('App', function AppIntegrationTests() {
   beforeEach(function setupFakeTimers() {
     vi.useFakeTimers();
+    resetConstantsForTesting();
   });
 
   afterEach(function restoreRealTimers() {
@@ -28,9 +29,8 @@ describe('App', function AppIntegrationTests() {
     render(<App />);
 
     const cells = document.querySelectorAll('.cell');
-    const gridSize = 15;
+    const gridSize = getConstant('DEFAULT_TILE_SIZE');
 
-    // Build a horizontal blinker in the middle row (row 7, cols 6-8).
     fireEvent.click(cells[7 * gridSize + 6]);
     fireEvent.click(cells[7 * gridSize + 7]);
     fireEvent.click(cells[7 * gridSize + 8]);
@@ -40,11 +40,10 @@ describe('App', function AppIntegrationTests() {
     fireEvent.click(screen.getByText('Start'));
 
     act(function advanceOneInterval() {
-      vi.advanceTimersByTime(DEFAULT_SIMULATION_SPEED_MS);
+      vi.advanceTimersByTime(getConstant('DEFAULT_SIMULATION_SPEED_MS'));
     });
 
     const updatedCells = document.querySelectorAll('.cell');
-    // Blinker should now be vertical: col 7, rows 6-8.
     expect(updatedCells[6 * gridSize + 7]).toHaveClass('alive');
     expect(updatedCells[7 * gridSize + 7]).toHaveClass('alive');
     expect(updatedCells[8 * gridSize + 7]).toHaveClass('alive');

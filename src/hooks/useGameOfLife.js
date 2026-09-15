@@ -4,14 +4,32 @@
  * composition, with no state logic of its own.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   createEmptyGrid,
   createRandomGrid,
   computeNextGeneration,
   hasAliveCells,
 } from '../helpers/gameLogic';
-import { DEFAULT_TILE_SIZE, DEFAULT_SIMULATION_SPEED_MS } from '../constants';
+import { getConstant } from '../store/constantsStore';
+
+/**
+ * Appends a grid to the history, discarding the oldest entries once
+ * the store's MAX_HISTORY_LENGTH is exceeded. Reads the limit fresh
+ * on every call, so an admin change takes effect immediately.
+ *
+ * @param {number[][][]} history
+ * @param {number[][]} gridToStore
+ * @returns {number[][][]}
+ */
+function appendToHistory(history, gridToStore) {
+  const maxLength = getConstant('MAX_HISTORY_LENGTH');
+  const extended = [...history, gridToStore];
+  if (extended.length <= maxLength) {
+    return extended;
+  }
+  return extended.slice(extended.length - maxLength);
+}
 
 /**
  * @returns {{
@@ -33,21 +51,59 @@ import { DEFAULT_TILE_SIZE, DEFAULT_SIMULATION_SPEED_MS } from '../constants';
  * }} The complete game state along with actions to control it.
  */
 function useGameOfLife() {
-  const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE);
-  const [speedMs, setSpeedMs] = useState(DEFAULT_SIMULATION_SPEED_MS);
+  const [tileSize, setTileSize] = useState(function initTileSize() {
+    return getConstant('DEFAULT_TILE_SIZE');
+  });
+  const [speedMs, setSpeedMs] = useState(function initSpeed() {
+    return getConstant('DEFAULT_SIMULATION_SPEED_MS');
+  });
   const [grid, setGrid] = useState(function initGrid() {
-    return createEmptyGrid(DEFAULT_TILE_SIZE);
+    return createEmptyGrid(getConstant('DEFAULT_TILE_SIZE'));
   });
   const [history, setHistory] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef(null);
+
+  // Holds the current tick logic so the interval effect can call it
+  // without listing grid/tileSize as dependencies - that would tear
+  // down and recreate the interval on every single tick.
+  const tickRef = useRef(null);
+
+  /**
+   * Advances the simulation by exactly one generation.
+   * Both the manual "step forward" button and the automatic interval
+   * funnel through this single function.
+   */
+  function advanceOneGeneration() {
+    if (!hasAliveCells(grid)) {
+      setIsRunning(false);
+      return;
+    }
+
+    const nextGrid = computeNextGeneration(grid, tileSize);
+
+    setHistory(function storePreviousGrid(prevHistory) {
+      return appendToHistory(prevHistory, grid);
+    });
+    setGrid(nextGrid);
+
+    if (!hasAliveCells(nextGrid)) {
+      setIsRunning(false);
+    }
+  }
+
+  // Keep the ref pointing at the latest version of the tick function,
+  // so the interval always calls current logic with current state.
+  tickRef.current = advanceOneGeneration;
 
   /**
    * Toggles the alive/dead state of a single cell.
+   * Wrapped in useCallback with an empty dependency array: it only
+   * ever uses the functional setGrid(prevGrid => ...) form, so the
+   * reference stays stable - required for Cell's React.memo to work.
    * @param {number} row
    * @param {number} col
    */
-  function handleCellClick(row, col) {
+  const handleCellClick = useCallback(function handleCellClick(row, col) {
     setGrid(function toggleCell(prevGrid) {
       const newGrid = prevGrid.map(function copyRow(r) {
         return [...r];
@@ -55,21 +111,19 @@ function useGameOfLife() {
       newGrid[row][col] = newGrid[row][col] === 1 ? 0 : 1;
       return newGrid;
     });
-  }
+  }, []);
 
-  /** Manually advances exactly one generation and saves the previous state to history. */
+  /**
+   * Manually advances exactly one generation.
+   * Intentionally NOT memoized - it closes over grid/tileSize and
+   * must pick up fresh values on every render.
+   */
   function handleStepForward() {
-    if (!hasAliveCells(grid)) return;
-    setHistory(function pushCurrentGrid(prevHistory) {
-      return [...prevHistory, grid];
-    });
-    setGrid(function advanceGrid(prevGrid) {
-      return computeNextGeneration(prevGrid, tileSize);
-    });
+    advanceOneGeneration();
   }
 
   /** Jumps back to the most recently stored grid state in the history. */
-  function handleStepBackward() {
+  const handleStepBackward = useCallback(function handleStepBackward() {
     setHistory(function popLastGrid(prevHistory) {
       if (prevHistory.length === 0) return prevHistory;
       const newHistory = prevHistory.slice(0, -1);
@@ -77,17 +131,17 @@ function useGameOfLife() {
       setGrid(lastGrid);
       return newHistory;
     });
-  }
+  }, []);
 
   /** Starts the automatic simulation. */
-  function handleStart() {
+  const handleStart = useCallback(function handleStart() {
     setIsRunning(true);
-  }
+  }, []);
 
   /** Pauses the automatic simulation. */
-  function handleStop() {
+  const handleStop = useCallback(function handleStop() {
     setIsRunning(false);
-  }
+  }, []);
 
   /** Resets the grid and history back to the empty starting state. */
   function handleReset() {
@@ -104,55 +158,40 @@ function useGameOfLife() {
   }
 
   /**
-   * Changes the grid size. This necessarily resets the grid and history,
-   * since a grid of a different size cannot be meaningfully carried over.
+   * Changes the grid size. This necessarily resets the grid and history.
    * @param {number} newSize
    */
-  function handleTileSizeChange(newSize) {
+  const handleTileSizeChange = useCallback(function handleTileSizeChange(newSize) {
     setIsRunning(false);
     setTileSize(newSize);
     setGrid(createEmptyGrid(newSize));
     setHistory([]);
-  }
+  }, []);
 
   /**
-   * Updates the simulation speed (interval between automatic steps).
-   * Takes effect immediately, even while the simulation is running,
-   * since speedMs is part of the interval effect's dependency array.
+   * Updates the simulation speed.
    * @param {number} newSpeedMs
    */
-  function handleSpeedChange(newSpeedMs) {
+  const handleSpeedChange = useCallback(function handleSpeedChange(newSpeedMs) {
     setSpeedMs(newSpeedMs);
-  }
+  }, []);
 
-  // Drives the automatic simulation via interval as long as isRunning is true.
-  // Re-runs whenever speedMs changes, so a speed change while running is
-  // picked up immediately instead of only on the next tick.
+  /**
+   * Drives the automatic simulation. Depends only on isRunning and
+   * speedMs - deliberately NOT on grid, so the timer runs
+   * uninterrupted instead of being torn down every tick.
+   */
   useEffect(function runSimulationInterval() {
-    if (isRunning) {
-      intervalRef.current = setInterval(function tick() {
-        setGrid(function advanceOneTick(prevGrid) {
-          if (hasAliveCells(prevGrid)) {
-            setHistory(function pushTickGrid(prevHistory) {
-              return [...prevHistory, prevGrid];
-            });
-          }
-          return computeNextGeneration(prevGrid, tileSize);
-        });
-      }, speedMs);
-    }
+    if (!isRunning) return undefined;
+
+    const intervalId = setInterval(function tick() {
+      tickRef.current();
+    }, speedMs);
 
     return function cleanupInterval() {
-      clearInterval(intervalRef.current);
+      clearInterval(intervalId);
     };
-  }, [isRunning, grid, tileSize, speedMs]);
-
-  // Automatically stops the simulation once no cell is alive anymore.
-  useEffect(function autoStopWhenDead() {
-    if (isRunning && !hasAliveCells(grid)) {
-      setIsRunning(false);
-    }
-  }, [grid, isRunning]);
+  }, [isRunning, speedMs]);
 
   return {
     grid,

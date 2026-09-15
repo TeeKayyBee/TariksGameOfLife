@@ -32,14 +32,12 @@ function renderControls() {
 describe('Controls', function ControlsTests() {
   it('renders the action buttons', function testActionButtonsPresent() {
     renderControls();
-
     expect(screen.getByText('Start')).toBeInTheDocument();
     expect(screen.getByText('Reset')).toBeInTheDocument();
   });
 
   it('renders the tile size and speed selectors', function testSelectorsPresent() {
     renderControls();
-
     expect(screen.getByLabelText('Rastergröße')).toBeInTheDocument();
     expect(screen.getByLabelText('Geschwindigkeit')).toBeInTheDocument();
   });

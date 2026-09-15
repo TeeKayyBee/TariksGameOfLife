@@ -5,20 +5,10 @@
 import Cell from './Cell';
 
 /**
- * Creates a click handler bound to a specific cell position.
- * @param {(row: number, col: number) => void} onCellClick
- * @param {number} row
- * @param {number} col
- * @returns {() => void}
- */
-function createCellClickHandler(onCellClick, row, col) {
-  return function handleCellClick() {
-    onCellClick(row, col);
-  };
-}
-
-/**
  * Renders a single row of the grid as an array of Cell components.
+ * onCellClick is passed straight through unchanged - the same stable
+ * reference reaches every cell, which is what lets Cell's React.memo
+ * skip re-rendering unaffected cells.
  * @param {number[]} row
  * @param {number} rowIndex
  * @param {(row: number, col: number) => void} onCellClick
@@ -29,7 +19,9 @@ function renderRow(row, rowIndex, onCellClick) {
       <Cell
         key={`${rowIndex}-${colIndex}`}
         isAlive={cellValue === 1}
-        onClick={createCellClickHandler(onCellClick, rowIndex, colIndex)}
+        row={rowIndex}
+        col={colIndex}
+        onCellClick={onCellClick}
       />
     );
   });

@@ -17,9 +17,7 @@ describe('Grid', function GridTests() {
       [0, 1, 0],
       [0, 0, 0],
     ];
-
     render(<Grid grid={grid} tileSize={3} onCellClick={function noop() {}} />);
-
     expect(document.querySelectorAll('.cell')).toHaveLength(9);
   });
 
@@ -28,11 +26,8 @@ describe('Grid', function GridTests() {
       [0, 0],
       [1, 0],
     ];
-
     render(<Grid grid={grid} tileSize={2} onCellClick={function noop() {}} />);
-
     const cells = document.querySelectorAll('.cell');
-    // Cells are rendered row by row, so index 2 is row 1, col 0 - the "1" in the grid above.
     expect(cells[2]).toHaveClass('alive');
     expect(cells[0]).toHaveClass('dead');
     expect(cells[1]).toHaveClass('dead');
@@ -48,9 +43,8 @@ describe('Grid', function GridTests() {
     const user = userEvent.setup();
 
     render(<Grid grid={grid} tileSize={2} onCellClick={handleCellClick} />);
-
     const cells = document.querySelectorAll('.cell');
-    await user.click(cells[3]); // last cell = row 1, col 1
+    await user.click(cells[3]);
 
     expect(handleCellClick).toHaveBeenCalledWith(1, 1);
   });

@@ -1,17 +1,17 @@
 /**
  * Unit tests for the useGameOfLife hook.
- * Uses fake timers to control the simulation interval deterministically,
- * instead of waiting real milliseconds during test runs.
+ * Uses fake timers to control the simulation interval deterministically.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import useGameOfLife from '../useGameOfLife';
-import { DEFAULT_TILE_SIZE, DEFAULT_SIMULATION_SPEED_MS } from '../../constants';
+import { getConstant, resetConstantsForTesting } from '../../store/constantsStore';
 
 describe('useGameOfLife', function useGameOfLifeTests() {
-  beforeEach(function setupFakeTimers() {
+  beforeEach(function setup() {
     vi.useFakeTimers();
+    resetConstantsForTesting();
   });
 
   afterEach(function restoreRealTimers() {
@@ -21,7 +21,7 @@ describe('useGameOfLife', function useGameOfLifeTests() {
   it('starts with an empty grid of the default size', function testInitialState() {
     const { result } = renderHook(useGameOfLife);
 
-    expect(result.current.grid).toHaveLength(DEFAULT_TILE_SIZE);
+    expect(result.current.grid).toHaveLength(getConstant('DEFAULT_TILE_SIZE'));
     expect(result.current.isRunning).toBe(false);
     expect(result.current.canStepForward).toBe(false);
   });
@@ -82,7 +82,7 @@ describe('useGameOfLife', function useGameOfLifeTests() {
     });
 
     act(function advanceOneInterval() {
-      vi.advanceTimersByTime(DEFAULT_SIMULATION_SPEED_MS);
+      vi.advanceTimersByTime(getConstant('DEFAULT_SIMULATION_SPEED_MS'));
     });
 
     expect(result.current.grid[1][2]).toBe(1);
@@ -93,12 +93,12 @@ describe('useGameOfLife', function useGameOfLifeTests() {
     const { result } = renderHook(useGameOfLife);
 
     act(function createIsolatedCellAndStart() {
-      result.current.handleCellClick(2, 2); // single cell, no neighbors
+      result.current.handleCellClick(2, 2);
       result.current.handleStart();
     });
 
     act(function advanceOneInterval() {
-      vi.advanceTimersByTime(DEFAULT_SIMULATION_SPEED_MS);
+      vi.advanceTimersByTime(getConstant('DEFAULT_SIMULATION_SPEED_MS'));
     });
 
     expect(result.current.isRunning).toBe(false);

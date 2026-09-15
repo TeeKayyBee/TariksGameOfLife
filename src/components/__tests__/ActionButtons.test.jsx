@@ -22,7 +22,6 @@ function renderActionButtons(overrides) {
     onRandomize: vi.fn(),
     onReset: vi.fn(),
   };
-
   const props = { ...defaultProps, ...overrides };
   render(<ActionButtons {...props} />);
   return props;
@@ -31,20 +30,17 @@ function renderActionButtons(overrides) {
 describe('ActionButtons', function ActionButtonsTests() {
   it('disables "Start" and "Schritt vor" when the grid has no living cells', function testDisabledWhenNoLife() {
     renderActionButtons({ canStepForward: false });
-
     expect(screen.getByText('Start')).toBeDisabled();
     expect(screen.getByText('Schritt vor')).toBeDisabled();
   });
 
   it('disables "Schritt zurück" when there is no history', function testDisabledWithoutHistory() {
     renderActionButtons({ canStepBackward: false });
-
     expect(screen.getByText('Schritt zurück')).toBeDisabled();
   });
 
   it('disables step and start buttons while the simulation is running', function testDisabledWhileRunning() {
     renderActionButtons({ isRunning: true });
-
     expect(screen.getByText('Schritt vor')).toBeDisabled();
     expect(screen.getByText('Schritt zurück')).toBeDisabled();
     expect(screen.getByText('Start')).toBeDisabled();
@@ -54,9 +50,7 @@ describe('ActionButtons', function ActionButtonsTests() {
   it('calls onRandomize when the "Zufall" button is clicked', async function testRandomizeClick() {
     const user = userEvent.setup();
     const props = renderActionButtons();
-
     await user.click(screen.getByText('Zufall'));
-
     expect(props.onRandomize).toHaveBeenCalledTimes(1);
   });
 });

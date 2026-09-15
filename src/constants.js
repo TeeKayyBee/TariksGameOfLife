@@ -1,14 +1,13 @@
 /**
  * Central constants for the Conway's Game of Life project.
- * Single source of truth for all fixed values, so no
- * "magic numbers" are scattered throughout the rest of the code.
+ * Contains only values that are true fixed invariants of the game -
+ * never meant to change at runtime.
+ *
+ * Admin-configurable runtime settings (grid size, simulation speed,
+ * history length, UI text) live exclusively in
+ * src/store/constantsStore.js - they are intentionally NOT duplicated
+ * here, so each value has exactly one place where it is defined.
  */
-
-/** Default grid size when the app first loads. */
-export const DEFAULT_TILE_SIZE = 15;
-
-/** Selectable grid sizes shown in the dropdown. */
-export const TILE_SIZE_OPTIONS = [10, 15, 20, 25];
 
 /** Value representing a living cell in the grid array. */
 export const ALIVE_CELL_VALUE = 1;
@@ -37,15 +36,3 @@ export const NEIGHBOR_OFFSETS = [
 
 /** Probability (0-1) that a cell starts alive when randomizing the grid. */
 export const RANDOM_ALIVE_PROBABILITY = 0.3;
-
-/** Default interval in milliseconds between two automatic generation steps. */
-export const DEFAULT_SIMULATION_SPEED_MS = 300;
-
-/** Fastest selectable simulation speed (lowest interval, in ms). */
-export const MIN_SIMULATION_SPEED_MS = 50;
-
-/** Slowest selectable simulation speed (highest interval, in ms). */
-export const MAX_SIMULATION_SPEED_MS = 1000;
-
-/** Step size for the speed slider, in ms. */
-export const SIMULATION_SPEED_STEP_MS = 50;
