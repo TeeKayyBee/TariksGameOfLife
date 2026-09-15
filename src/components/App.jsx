@@ -1,16 +1,19 @@
 /**
- * Root component of the application. Deliberately contains no state
- * logic of its own - that lives entirely in the useGameOfLife hook.
- * App.jsx is limited to composing components and passing down props.
+ * Root component of the application. Contains no game state logic of
+ * its own - that lives in useGameOfLife. Admin panel visibility is a
+ * separate, unrelated piece of UI state via useAdminPanel.
  */
 
 import useGameOfLife from '../hooks/useGameOfLife';
+import useAdminPanel from '../hooks/useAdminPanel';
 import Header from './Header';
 import Grid from './Grid';
 import Controls from './Controls';
+import AdminSettings from './AdminSettings';
 
 function App() {
   const gameOfLife = useGameOfLife();
+  const adminPanel = useAdminPanel();
 
   return (
     <div className="app">
@@ -35,6 +38,10 @@ function App() {
         onTileSizeChange={gameOfLife.handleTileSizeChange}
         onSpeedChange={gameOfLife.handleSpeedChange}
       />
+      <button className="admin-toggle" onClick={adminPanel.toggle}>
+        {adminPanel.isOpen ? 'Admin-Bereich schließen' : 'Admin-Bereich öffnen'}
+      </button>
+      {adminPanel.isOpen && <AdminSettings />}
     </div>
   );
 }

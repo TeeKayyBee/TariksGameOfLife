@@ -48,4 +48,18 @@ describe('App', function AppIntegrationTests() {
     expect(updatedCells[7 * gridSize + 7]).toHaveClass('alive');
     expect(updatedCells[8 * gridSize + 7]).toHaveClass('alive');
   });
+
+  it('shows the admin panel only after the toggle button is clicked', function testAdminPanelToggle() {
+    render(<App />);
+
+    expect(screen.queryByPlaceholderText('Benutzername')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Admin-Bereich öffnen'));
+
+    expect(screen.getByPlaceholderText('Benutzername')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Admin-Bereich schließen'));
+
+    expect(screen.queryByPlaceholderText('Benutzername')).not.toBeInTheDocument();
+  });
 });
