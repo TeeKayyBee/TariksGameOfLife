@@ -57,19 +57,12 @@ describe('App', function AppIntegrationTests() {
   });
 
   it('shows the admin panel only after the toggle button is clicked', function testAdminPanelToggle() {
-    render(<App />);
-
-    // queryBy (not getBy) is used here because we're asserting
-    // absence - getBy would throw instead of returning null,
-    // which would fail the test for the wrong reason.
-    expect(screen.queryByPlaceholderText('Benutzername')).not.toBeInTheDocument();
-
+  render(<App />);
+  
+    expect(screen.queryByLabelText('Benutzername')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Admin-Bereich öffnen'));
-
-    expect(screen.getByPlaceholderText('Benutzername')).toBeInTheDocument();
-
+    expect(screen.getByLabelText('Benutzername')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Admin-Bereich schließen'));
-
-    expect(screen.queryByPlaceholderText('Benutzername')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Benutzername')).not.toBeInTheDocument();
   });
 });
