@@ -19,9 +19,9 @@ export default defineConfig(
       VitePWA({ 
         registerType: 'autoUpdate', 
         manifest: { 
-          name: "Conway's Game of Life", 
+          name: "Tarik's Game of Life", 
           short_name: 'GameOfLife', 
-          description: 'Conways Game of Life als interaktive Simulation', 
+          description: 'Conways Game of Life as interaktive Simulation', 
           theme_color: '#121212', 
           background_color: '#121212', 
           display: 'standalone', 
@@ -31,6 +31,7 @@ export default defineConfig(
           ] 
         } 
       }) 
-    ], 
+    ],
+    test: { environment: 'jsdom', globals: true, setupFiles: './src/test-setup.js', } 
   }
 )

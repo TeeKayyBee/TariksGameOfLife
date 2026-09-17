@@ -1,86 +1,104 @@
 /**
- * The constant grid dimension of the square game board.
- * 
- * @remarks
- * This value specifies that the board consists of 15 rows and 15 columns
- * and controls loop iterations during grid generation and rule calculation.
+ * Pure game logic for Conway's Game of Life.
+ * Contains only pure functions with no side effects or React
+ * dependency, so they remain independently testable.
  */
-export const GRID_SIZE = 15;
+
+import {
+  ALIVE_CELL_VALUE,
+  DEAD_CELL_VALUE,
+  MIN_NEIGHBORS_TO_SURVIVE,
+  MAX_NEIGHBORS_TO_SURVIVE,
+  NEIGHBORS_TO_REPRODUCE,
+  NEIGHBOR_OFFSETS,
+  RANDOM_ALIVE_PROBABILITY,
+} from '../constants';
 
 /**
- * Creates a new, empty matrix (two-dimensional array) for the game board.
- * 
- * @remarks
- * All cells are initially populated with the state `0` (dead) using nested arrays.
- * The dimension is based on the predefined length `GRID_SIZE`.
- * 
- * @returns A new game board matrix where all cells have a value of `0`.
+ * Creates an empty square grid in which all cells are dead.
+ *
+ * @param {number} size - Edge length of the grid (e.g. 15 for 15x15).
+ * @returns {number[][]} New 2D array filled with DEAD_CELL_VALUE.
  */
-export function createEmptyGrid() {
+export function createEmptyGrid(size) {
   const grid = [];
-  for (let row = 0; row < GRID_SIZE; row++) {
-    grid.push(new Array(GRID_SIZE).fill(0));
+  for (let row = 0; row < size; row++) {
+    grid.push(new Array(size).fill(DEAD_CELL_VALUE));
   }
   return grid;
 }
 
 /**
- * Counts the living neighbors of a specific cell in the grid.
- * 
- * @param grid - The current two-dimensional array (game board).
- * @param row - The Y-coordinate (row) of the target cell.
- * @param col - The X-coordinate (column) of the target cell.
- * @returns The number of living neighbor cells (value between 0 and 8).
+ * Creates a grid in which each cell is randomly alive with a fixed
+ * probability (RANDOM_ALIVE_PROBABILITY).
+ *
+ * @param {number} size - Edge length of the grid.
+ * @returns {number[][]} New 2D array with randomly distributed living cells.
  */
-function countAliveNeighbors(grid, row, col) {
-  const neighborOffsets = [
-    [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1],
-  ];
+export function createRandomGrid(size) {
+  const grid = createEmptyGrid(size);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      grid[row][col] =
+        Math.random() < RANDOM_ALIVE_PROBABILITY
+          ? ALIVE_CELL_VALUE
+          : DEAD_CELL_VALUE;
+    }
+  }
+  return grid;
+}
 
-
+/**
+ * Counts how many of the 8 surrounding cells of a given position are alive.
+ * Cells outside the grid are not counted (hard edge behavior).
+ *
+ * @param {number[][]} grid - Current grid.
+ * @param {number} row - Row index of the cell being checked.
+ * @param {number} col - Column index of the cell being checked.
+ * @param {number} size - Edge length of the grid.
+ * @returns {number} Number of living neighbors (0 to 8).
+ */
+function countAliveNeighbors(grid, row, col, size) {
   let count = 0;
-  for (const [rowOffset, colOffset] of neighborOffsets) {
+  for (const [rowOffset, colOffset] of NEIGHBOR_OFFSETS) {
     const neighborRow = row + rowOffset;
     const neighborCol = col + colOffset;
+    const isInBounds =
+      neighborRow >= 0 && neighborRow < size &&
+      neighborCol >= 0 && neighborCol < size;
 
-    const isInBounds = neighborRow >= 0 && neighborRow < GRID_SIZE && neighborCol >= 0 && neighborCol < GRID_SIZE;
-
-    if (isInBounds && grid[neighborRow][neighborCol] === 1) {
+    if (isInBounds && grid[neighborRow][neighborCol] === ALIVE_CELL_VALUE) {
       count++;
     }
   }
-
   return count;
 }
 
 /**
- * Computes the next generation of the game board applying Conway's rules.
- * 
- * @remarks
- * The function iterates through each coordinate of the grid, determines living neighbors 
- * via `countAliveNeighbors`, and applies the following logic:
- * - A living cell remains alive with 2 or 3 neighbors.
- * - A dead cell becomes alive with exactly 3 neighbors.
- * - All other cells are marked as `0` (dead) in the new matrix.
- * 
- * @param grid - The current game board grid used as the basis for computation.
- * @returns A completely new matrix representing the subsequent state of the simulation.
+ * Computes the next generation from the current grid, following the
+ * classic Conway's Game of Life rules (underpopulation, survival,
+ * overpopulation, reproduction).
+ *
+ * @param {number[][]} grid - Current grid (not mutated).
+ * @param {number} size - Edge length of the grid.
+ * @returns {number[][]} New grid representing the next generation's state.
  */
-export function computeNextGeneration(grid) {
-  const newGrid = createEmptyGrid();
+export function computeNextGeneration(grid, size) {
+  const newGrid = createEmptyGrid(size);
 
-  for (let row = 0; row < GRID_SIZE; row++){
-    for (let col = 0; col < GRID_SIZE; col++){
-      const aliveNeighbors = countAliveNeighbors(grid, row, col);
-      const isAlive = grid[row][col] === 1;
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const aliveNeighbors = countAliveNeighbors(grid, row, col, size);
+      const isAlive = grid[row][col] === ALIVE_CELL_VALUE;
 
-      if(isAlive && (aliveNeighbors === 2 || aliveNeighbors === 3)) {
-        newGrid[row][col] = 1;
-      } else if (!isAlive && aliveNeighbors === 3) {
-        newGrid[row][col] = 1;
-      } else {
-        newGrid[row][col] = 0;
-      }
+      const survives =
+        isAlive &&
+        aliveNeighbors >= MIN_NEIGHBORS_TO_SURVIVE &&
+        aliveNeighbors <= MAX_NEIGHBORS_TO_SURVIVE;
+      const reproduces = !isAlive && aliveNeighbors === NEIGHBORS_TO_REPRODUCE;
+
+      newGrid[row][col] =
+        survives || reproduces ? ALIVE_CELL_VALUE : DEAD_CELL_VALUE;
     }
   }
 
@@ -88,15 +106,15 @@ export function computeNextGeneration(grid) {
 }
 
 /**
- * Checks the given grid for the presence of living cells.
- * 
- * @remarks
- * Uses the `some` array method to efficiently scan rows and cells.
- * Short-circuits and returns `true` as soon as the first living cell (`1`) is found.
- * 
- * @param grid - The game board matrix to check.
- * @returns Returns `true` if at least one active cell exists, otherwise `false`.
+ * Checks whether at least one cell in the grid is alive.
+ *
+ * @param {number[][]} grid - Grid to check.
+ * @returns {boolean} true if at least one living cell exists.
  */
 export function hasAliveCells(grid) {
-  return grid.some(row => row.some(cell => cell === 1));
+  return grid.some(function checkRowForLife(row) {
+    return row.some(function checkCellIsAlive(cell) {
+      return cell === ALIVE_CELL_VALUE;
+    });
+  });
 }
