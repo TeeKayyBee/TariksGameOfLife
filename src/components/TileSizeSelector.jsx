@@ -1,10 +1,15 @@
 /**
- * Dropdown for selecting the grid size. Options and label text are
- * read from constantsStore, so an admin can change them at runtime.
+ * Dropdown for selecting the grid size. Both the available options
+ * and the label text are read reactively from constantsStore via
+ * useStoreValue, so an admin's edit updates them immediately.
  */
 
-import { getConstant } from '../store/constantsStore';
+import useStoreValue from '../hooks/useStoreValue';
 
+/**
+ * Renders a single selectable option for a grid size.
+ * @param {number} size
+ */
 function renderOption(size) {
   return (
     <option key={size} value={size}>
@@ -20,8 +25,8 @@ function renderOption(size) {
  * }} props
  */
 function TileSizeSelector({ tileSize, onTileSizeChange }) {
-  const tileSizeOptions = getConstant('TILE_SIZE_OPTIONS');
-  const uiText = getConstant('UI_TEXT');
+  const tileSizeOptions = useStoreValue('TILE_SIZE_OPTIONS');
+  const uiText = useStoreValue('UI_TEXT');
 
   function handleChange(event) {
     onTileSizeChange(Number(event.target.value));

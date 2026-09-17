@@ -1,9 +1,10 @@
 /**
  * Slider for adjusting the simulation speed. Bounds and label text
- * are read from constantsStore, so an admin can change them at runtime.
+ * are read reactively from constantsStore via useStoreValue, so an
+ * admin's edit updates them immediately.
  */
 
-import { getConstant } from '../store/constantsStore';
+import useStoreValue from '../hooks/useStoreValue';
 
 /**
  * @param {{
@@ -12,10 +13,10 @@ import { getConstant } from '../store/constantsStore';
  * }} props
  */
 function SpeedSelector({ speedMs, onSpeedChange }) {
-  const minSpeed = getConstant('MIN_SIMULATION_SPEED_MS');
-  const maxSpeed = getConstant('MAX_SIMULATION_SPEED_MS');
-  const stepSpeed = getConstant('SIMULATION_SPEED_STEP_MS');
-  const uiText = getConstant('UI_TEXT');
+  const minSpeed = useStoreValue('MIN_SIMULATION_SPEED_MS');
+  const maxSpeed = useStoreValue('MAX_SIMULATION_SPEED_MS');
+  const stepSpeed = useStoreValue('SIMULATION_SPEED_STEP_MS');
+  const uiText = useStoreValue('UI_TEXT');
 
   function handleChange(event) {
     onSpeedChange(Number(event.target.value));

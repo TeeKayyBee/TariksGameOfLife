@@ -1,13 +1,13 @@
 /**
  * Displays the app title together with a small glider-shaped icon.
- * The title text is read from constantsStore, so an admin can
- * change it at runtime.
+ * The title text is read reactively from constantsStore via
+ * useStoreValue, so an admin's edit updates it immediately.
  */
 
-import { getConstant } from '../store/constantsStore';
+import useStoreValue from '../hooks/useStoreValue';
 
 function Header() {
-  const uiText = getConstant('UI_TEXT');
+  const uiText = useStoreValue('UI_TEXT');
 
   return (
     <div className="app-header">

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import useGameOfLife from '../useGameOfLife';
-import { getConstant, resetConstantsForTesting } from '../../store/constantsStore';
+import { getConstant, resetConstantsForTesting, setConstant } from '../../store/constantsStore';
 
 describe('useGameOfLife', function useGameOfLifeTests() {
   beforeEach(function setup() {
@@ -129,5 +129,25 @@ describe('useGameOfLife', function useGameOfLifeTests() {
 
     expect(result.current.tileSize).toBe(10);
     expect(result.current.grid).toHaveLength(10);
+  });
+
+  it('immediately applies an admin speed change to a running simulation', function testLiveSpeedOverride() {
+    const { result } = renderHook(useGameOfLife);
+
+    act(function changeAdminDefault() {
+      setConstant('DEFAULT_SIMULATION_SPEED_MS', 700, 'admin');
+    });
+
+    expect(result.current.speedMs).toBe(700);
+  });
+
+  it('does not override a manually chosen speed unless the admin default changes', function testManualSpeedUnaffected() {
+    const { result } = renderHook(useGameOfLife);
+
+    act(function chooseSpeedManually() {
+      result.current.handleSpeedChange(150);
+    });
+
+    expect(result.current.speedMs).toBe(150);
   });
 });

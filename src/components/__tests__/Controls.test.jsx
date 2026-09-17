@@ -9,6 +9,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Controls from '../Controls';
 
+/**
+ * Renders Controls with a full, valid set of default props, since
+ * every prop is required - this avoids repeating the same 13-prop
+ * object literal in every test below.
+ */
 function renderControls() {
   render(
     <Controls

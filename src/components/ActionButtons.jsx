@@ -1,11 +1,11 @@
 /**
  * Contains all control buttons for the simulation
  * (step backward/forward, start, stop, randomize, reset).
- * Button labels are read from constantsStore, so an admin can
- * change them at runtime.
+ * Button labels are read reactively from constantsStore via
+ * useStoreValue, so an admin's edit updates them immediately.
  */
 
-import { getConstant } from '../store/constantsStore';
+import useStoreValue from '../hooks/useStoreValue';
 
 /**
  * @param {{
@@ -31,7 +31,7 @@ function ActionButtons({
   onRandomize,
   onReset,
 }) {
-  const uiText = getConstant('UI_TEXT');
+  const uiText = useStoreValue('UI_TEXT');
 
   return (
     <div className="action-buttons">

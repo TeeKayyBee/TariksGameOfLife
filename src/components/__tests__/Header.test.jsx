@@ -1,6 +1,7 @@
 /**
  * Unit test for the Header component.
- * Minimal by design - this component has no logic, only rendering.
+ * Kept minimal by design - this component has no logic of its own,
+ * only rendering the title (read from the store) and a static icon.
  */
 
 import { describe, it, expect } from 'vitest';

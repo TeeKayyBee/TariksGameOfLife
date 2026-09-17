@@ -234,3 +234,22 @@ button:disabled {
 .admin-toggle:hover:not(:disabled) {
   opacity: 1;
 }
+
+.admin-settings label {
+  font-size: 12px;
+  color: #999;
+  margin-top: var(--space-sm);
+}
+
+.admin-settings fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+}
+
+.admin-settings legend {
+  font-size: 12px;
+  color: #999;
+  padding: 0 4px;
+}

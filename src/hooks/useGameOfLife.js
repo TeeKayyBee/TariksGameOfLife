@@ -4,14 +4,20 @@
  * composition, with no state logic of its own.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useSyncExternalStore,
+} from 'react';
 import {
   createEmptyGrid,
   createRandomGrid,
   computeNextGeneration,
   hasAliveCells,
 } from '../helpers/gameLogic';
-import { getConstant } from '../store/constantsStore';
+import { getConstant, subscribeToConstants } from '../store/constantsStore';
 
 /**
  * Appends a grid to the history, discarding the oldest entries once
@@ -51,12 +57,22 @@ function appendToHistory(history, gridToStore) {
  * }} The complete game state along with actions to control it.
  */
 function useGameOfLife() {
+  /**
+   * Subscribes to the store's default speed specifically. This is
+   * what lets an admin's change reach an already-running simulation:
+   * the effect below reacts whenever this synced value changes.
+   */
+  const storeDefaultSpeed = useSyncExternalStore(
+    subscribeToConstants,
+    function getDefaultSpeedSnapshot() {
+      return getConstant('DEFAULT_SIMULATION_SPEED_MS');
+    }
+  );
+
   const [tileSize, setTileSize] = useState(function initTileSize() {
     return getConstant('DEFAULT_TILE_SIZE');
   });
-  const [speedMs, setSpeedMs] = useState(function initSpeed() {
-    return getConstant('DEFAULT_SIMULATION_SPEED_MS');
-  });
+  const [speedMs, setSpeedMs] = useState(storeDefaultSpeed);
   const [grid, setGrid] = useState(function initGrid() {
     return createEmptyGrid(getConstant('DEFAULT_TILE_SIZE'));
   });
@@ -69,9 +85,25 @@ function useGameOfLife() {
   const tickRef = useRef(null);
 
   /**
+   * Applies an admin's change to the default speed immediately, even
+   * to an already-running simulation. Deliberately only listens to
+   * storeDefaultSpeed (not every store change), so it does not fire
+   * on unrelated admin edits (e.g. changing a button label).
+   *
+   * Note the asymmetry with DEFAULT_TILE_SIZE: that one is only read
+   * once at mount/reset, never live-applied, because changing the
+   * grid size destructively wipes the current pattern - unlike
+   * speed, which can change without losing any game state.
+   */
+  useEffect(function applyAdminSpeedChangeLive() {
+    setSpeedMs(storeDefaultSpeed);
+  }, [storeDefaultSpeed]);
+
+  /**
    * Advances the simulation by exactly one generation.
    * Both the manual "step forward" button and the automatic interval
-   * funnel through this single function.
+   * funnel through this single function, so the two paths can never
+   * drift apart in behavior.
    */
   function advanceOneGeneration() {
     if (!hasAliveCells(grid)) {
@@ -143,14 +175,21 @@ function useGameOfLife() {
     setIsRunning(false);
   }, []);
 
-  /** Resets the grid and history back to the empty starting state. */
+  /**
+   * Resets the grid and history back to the empty starting state.
+   * Intentionally NOT memoized - it closes over tileSize and must
+   * use the current value, not a stale one from mount.
+   */
   function handleReset() {
     setIsRunning(false);
     setGrid(createEmptyGrid(tileSize));
     setHistory([]);
   }
 
-  /** Fills the grid with a new random pattern. */
+  /**
+   * Fills the grid with a new random pattern.
+   * Intentionally NOT memoized - closes over tileSize.
+   */
   function handleRandomize() {
     setIsRunning(false);
     setGrid(createRandomGrid(tileSize));
@@ -158,7 +197,8 @@ function useGameOfLife() {
   }
 
   /**
-   * Changes the grid size. This necessarily resets the grid and history.
+   * Changes the grid size. This necessarily resets the grid and history,
+   * since a grid of a different size cannot be meaningfully carried over.
    * @param {number} newSize
    */
   const handleTileSizeChange = useCallback(function handleTileSizeChange(newSize) {
@@ -169,7 +209,8 @@ function useGameOfLife() {
   }, []);
 
   /**
-   * Updates the simulation speed.
+   * Updates the simulation speed in response to the user manually
+   * moving the speed slider.
    * @param {number} newSpeedMs
    */
   const handleSpeedChange = useCallback(function handleSpeedChange(newSpeedMs) {
@@ -179,7 +220,7 @@ function useGameOfLife() {
   /**
    * Drives the automatic simulation. Depends only on isRunning and
    * speedMs - deliberately NOT on grid, so the timer runs
-   * uninterrupted instead of being torn down every tick.
+   * uninterrupted instead of being torn down and recreated every tick.
    */
   useEffect(function runSimulationInterval() {
     if (!isRunning) return undefined;
