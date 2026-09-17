@@ -1,9 +1,13 @@
 /**
  * A minimal, encapsulated store for admin-configurable settings.
- * Now includes a subscribe/notify mechanism so React components can
- * react to changes via useSyncExternalStore - without this, a write
- * through setConstant() would change the underlying data but nothing
- * would know to re-render.
+ * These values (grid size, simulation speed bounds, history length,
+ * UI text) are defined ONLY here - nowhere else in the codebase.
+ *
+ * The actual data lives in a module-private variable that is never
+ * exported directly - the only way to read or write it is through
+ * getConstant() / getAllConstants() / setConstant() below. Includes
+ * a subscribe/notify mechanism so React components can react to
+ * changes via useSyncExternalStore.
  */
 
 const ADMIN_ROLE = 'admin';
@@ -29,10 +33,26 @@ const INITIAL_DATA = {
   },
 };
 
-let data = { ...INITIAL_DATA };
+/**
+ * Creates a fresh, fully independent copy of the initial data.
+ * structuredClone performs a deep copy, so nested values like
+ * TILE_SIZE_OPTIONS (array) and UI_TEXT (object) get their own new
+ * references too - not just the outer object. Without this, `data`
+ * and `INITIAL_DATA` would share the same nested array/object
+ * instances, meaning a future direct mutation of a nested value
+ * (even accidental) would corrupt INITIAL_DATA itself, breaking
+ * resetConstantsForTesting()'s guarantee of returning to a true
+ * original state.
+ * @returns {object}
+ */
+function cloneInitialData() {
+  return structuredClone(INITIAL_DATA);
+}
 
-// Set of listener functions registered via subscribe(). A Set (not
-// an array) makes add/remove trivial and avoids duplicate entries.
+// Module-private state. Deliberately not exported - this is the
+// entire point of the encapsulation.
+let data = cloneInitialData();
+
 const listeners = new Set();
 
 function notifyListeners() {
@@ -55,10 +75,20 @@ export function subscribeToConstants(listener) {
   };
 }
 
+/**
+ * Reads a single config value. Reading is always allowed for every
+ * role - only writing is restricted.
+ * @param {string} key
+ * @returns {*}
+ */
 export function getConstant(key) {
   return data[key];
 }
 
+/**
+ * Returns a shallow copy of all config values.
+ * @returns {object}
+ */
 export function getAllConstants() {
   return { ...data };
 }
@@ -87,7 +117,12 @@ export function setConstant(key, value, role) {
   return true;
 }
 
+/**
+ * Resets the store back to a fresh deep copy of its initial values.
+ * Primarily useful for tests, so each test starts from a known,
+ * uncorrupted state.
+ */
 export function resetConstantsForTesting() {
-  data = { ...INITIAL_DATA };
+  data = cloneInitialData();
   notifyListeners();
 }

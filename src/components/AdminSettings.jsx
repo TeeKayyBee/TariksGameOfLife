@@ -1,77 +1,189 @@
 /**
- * Full admin panel for constantsStore. Any role can view the login
- * form, but only the admin role can persist changes via
- * setConstant() - enforced inside the store itself, not just here.
+ * Full admin panel for constantsStore. Authentication state (role,
+ * login, logout) is owned by the parent (App.jsx via useAuth) and
+ * passed in as props, rather than held locally - this way the login
+ * session survives the panel being closed and reopened, since
+ * closing the panel only unmounts this component, not its parent's
+ * auth state.
  *
  * Edits are held in local "draft" state and only written to the
- * store when "Alle Änderungen speichern" is clicked, so an admin can
- * adjust several fields before committing them all at once.
+ * store when "Alle Änderungen speichern" is clicked. All numeric
+ * fields are kept as raw strings in the draft (not parsed numbers)
+ * while editing, so a user can freely clear or retype a field
+ * without it silently collapsing to 0 - parsing and validation only
+ * happen at save time, and saving is all-or-nothing: if anything
+ * fails validation, nothing is written to the store.
  */
 
 import { useState } from 'react';
-import useAuth from '../hooks/useAuth';
 import { getAllConstants, setConstant } from '../store/constantsStore';
+
+/** Maps the UI_TEXT fields this form exposes to their display labels, used both for form labels and validation error messages. */
+const UI_TEXT_FIELD_LABELS = {
+  appTitle: 'Titel',
+  start: 'Start-Knopf',
+  stop: 'Stop-Knopf',
+  reset: 'Reset-Knopf',
+};
 
 /**
  * Converts a comma-separated string like "10, 15, 20" into a clean
  * array of positive integers, e.g. [10, 15, 20]. Invalid entries
- * (non-numbers, zero, negatives) are silently dropped rather than
- * causing an error, since this runs on every keystroke while typing.
+ * (non-numbers, zero, negatives, decimals) are silently dropped
+ * rather than causing an error, since this runs on every keystroke
+ * while typing - the result is only checked for emptiness at save time.
+ * Exported so it can be unit tested independently of the component.
  * @param {string} text
  * @returns {number[]}
  */
-function parseSizeList(text) {
+export function parseSizeList(text) {
   return text
     .split(',')
     .map(function trimAndParse(part) {
       return Number(part.trim());
     })
-    .filter(function isValidNumber(n) {
+    .filter(function isValidPositiveInteger(n) {
       return Number.isInteger(n) && n > 0;
     });
 }
 
-function AdminSettings() {
-  const { role, login, logout } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState(false);
-  const [draft, setDraft] = useState(getAllConstants);
-  const [saveMessage, setSaveMessage] = useState('');
+/**
+ * Parses a raw form field into a positive integer, or null if the
+ * field is empty, not a number, not an integer, or not positive.
+ * Returning null (rather than 0 or NaN) lets the caller distinguish
+ * "invalid" from "a real value of zero" and report a proper error
+ * instead of silently accepting a broken setting.
+ * @param {string} text
+ * @returns {number | null}
+ */
+function parsePositiveInteger(text) {
+  const trimmed = text.trim();
+  if (trimmed === '') return null;
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+}
 
-  /**
-   * Attempts to log in with the entered credentials. On success,
-   * refreshes the draft from the store, so the form reflects any
-   * changes made elsewhere since the panel was last opened.
-   * @param {SubmitEvent} event
-   */
-  function handleLoginSubmit(event) {
-    event.preventDefault();
-    const success = login(username, password);
-    setLoginError(!success);
-    if (success) {
-      setDraft(getAllConstants());
+/**
+ * Builds the initial/reset draft state directly from the store's
+ * current values. Numeric fields are converted to strings for
+ * editing; TILE_SIZE_OPTIONS is joined into a display string.
+ * @returns {object}
+ */
+function buildDraftFromStore() {
+  const current = getAllConstants();
+  return {
+    DEFAULT_TILE_SIZE: String(current.DEFAULT_TILE_SIZE),
+    TILE_SIZE_OPTIONS: current.TILE_SIZE_OPTIONS.join(', '),
+    DEFAULT_SIMULATION_SPEED_MS: String(current.DEFAULT_SIMULATION_SPEED_MS),
+    MIN_SIMULATION_SPEED_MS: String(current.MIN_SIMULATION_SPEED_MS),
+    MAX_SIMULATION_SPEED_MS: String(current.MAX_SIMULATION_SPEED_MS),
+    SIMULATION_SPEED_STEP_MS: String(current.SIMULATION_SPEED_STEP_MS),
+    MAX_HISTORY_LENGTH: String(current.MAX_HISTORY_LENGTH),
+    UI_TEXT: { ...current.UI_TEXT },
+  };
+}
+
+/**
+ * Validates a draft in full and, if valid, returns the parsed values
+ * ready to be written to the store. Runs every check before
+ * returning, so the caller sees every problem at once instead of
+ * one at a time across repeated save attempts.
+ * @param {object} draft
+ * @returns {{ errors: string[], parsed: object }}
+ */
+function validateDraft(draft) {
+  const errors = [];
+  const parsed = {};
+
+  const tileSizeOptions = parseSizeList(draft.TILE_SIZE_OPTIONS);
+  if (tileSizeOptions.length === 0) {
+    errors.push('Rastergrößen-Optionen: mindestens eine gültige Zahl angeben.');
+  } else {
+    parsed.TILE_SIZE_OPTIONS = tileSizeOptions;
+  }
+
+  const defaultTileSize = parsePositiveInteger(draft.DEFAULT_TILE_SIZE);
+  if (defaultTileSize === null) {
+    errors.push('Standard-Rastergröße: gültige positive Zahl erforderlich.');
+  } else {
+    parsed.DEFAULT_TILE_SIZE = defaultTileSize;
+  }
+
+  const minSpeed = parsePositiveInteger(draft.MIN_SIMULATION_SPEED_MS);
+  const maxSpeed = parsePositiveInteger(draft.MAX_SIMULATION_SPEED_MS);
+  const defaultSpeed = parsePositiveInteger(draft.DEFAULT_SIMULATION_SPEED_MS);
+  const stepSpeed = parsePositiveInteger(draft.SIMULATION_SPEED_STEP_MS);
+  const historyLength = parsePositiveInteger(draft.MAX_HISTORY_LENGTH);
+
+  if (minSpeed === null) errors.push('Minimale Geschwindigkeit: gültige positive Zahl erforderlich.');
+  if (maxSpeed === null) errors.push('Maximale Geschwindigkeit: gültige positive Zahl erforderlich.');
+  if (defaultSpeed === null) errors.push('Standard-Geschwindigkeit: gültige positive Zahl erforderlich.');
+  if (stepSpeed === null) errors.push('Geschwindigkeits-Schrittweite: gültige positive Zahl erforderlich.');
+  if (historyLength === null) errors.push('Maximale History-Länge: gültige positive Zahl erforderlich.');
+
+  if (minSpeed !== null && maxSpeed !== null) {
+    if (minSpeed >= maxSpeed) {
+      errors.push('Minimale Geschwindigkeit muss kleiner als die maximale sein.');
+    } else {
+      parsed.MIN_SIMULATION_SPEED_MS = minSpeed;
+      parsed.MAX_SIMULATION_SPEED_MS = maxSpeed;
+
+      if (defaultSpeed !== null && (defaultSpeed < minSpeed || defaultSpeed > maxSpeed)) {
+        errors.push('Standard-Geschwindigkeit muss zwischen Minimum und Maximum liegen.');
+      } else if (defaultSpeed !== null) {
+        parsed.DEFAULT_SIMULATION_SPEED_MS = defaultSpeed;
+      }
     }
   }
 
-  /**
-   * Updates a single top-level field in the local draft, without
-   * touching the store yet.
-   * @param {string} key
-   * @param {*} value
-   */
+  if (stepSpeed !== null) parsed.SIMULATION_SPEED_STEP_MS = stepSpeed;
+  if (historyLength !== null) parsed.MAX_HISTORY_LENGTH = historyLength;
+
+  Object.keys(UI_TEXT_FIELD_LABELS).forEach(function checkUiTextField(field) {
+    if (draft.UI_TEXT[field].trim() === '') {
+      errors.push(`${UI_TEXT_FIELD_LABELS[field]}: darf nicht leer sein.`);
+    }
+  });
+  if (errors.length === 0 || Object.keys(UI_TEXT_FIELD_LABELS).every(function fieldIsFilled(field) {
+    return draft.UI_TEXT[field].trim() !== '';
+  })) {
+    parsed.UI_TEXT = draft.UI_TEXT;
+  }
+
+  return { errors, parsed };
+}
+
+/**
+ * @param {{
+ *   role: 'guest' | 'admin',
+ *   onLogin: (username: string, password: string) => boolean,
+ *   onLogout: () => void
+ * }} props
+ */
+function AdminSettings({ role, onLogin, onLogout }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
+  const [draft, setDraft] = useState(buildDraftFromStore);
+  const [saveErrors, setSaveErrors] = useState([]);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  function handleLoginSubmit(event) {
+    event.preventDefault();
+    const success = onLogin(username, password);
+    setLoginError(!success);
+    if (success) {
+      setDraft(buildDraftFromStore());
+    }
+  }
+
   function updateDraftField(key, value) {
     setDraft(function mergeField(prevDraft) {
       return { ...prevDraft, [key]: value };
     });
   }
 
-  /**
-   * Updates a single field inside the nested UI_TEXT object in the
-   * local draft, without touching the store yet.
-   * @param {string} field
-   * @param {string} value
-   */
   function updateDraftUiText(field, value) {
     setDraft(function mergeUiText(prevDraft) {
       return { ...prevDraft, UI_TEXT: { ...prevDraft.UI_TEXT, [field]: value } };
@@ -79,43 +191,48 @@ function AdminSettings() {
   }
 
   /**
-   * Persists every field in the draft to the store in one go.
-   * Each individual write still goes through setConstant()'s own
-   * role check - handleSaveAll does not bypass that, it just calls
-   * it once per key.
+   * Validates the entire draft first; only if everything passes does
+   * it write anything to the store. This makes the save all-or-nothing:
+   * either every field updates together, or none do.
    */
   function handleSaveAll() {
-    const keysToSave = [
-      'DEFAULT_TILE_SIZE',
-      'TILE_SIZE_OPTIONS',
-      'DEFAULT_SIMULATION_SPEED_MS',
-      'MIN_SIMULATION_SPEED_MS',
-      'MAX_SIMULATION_SPEED_MS',
-      'SIMULATION_SPEED_STEP_MS',
-      'MAX_HISTORY_LENGTH',
-      'UI_TEXT',
-    ];
+    const { errors, parsed } = validateDraft(draft);
 
+    if (errors.length > 0) {
+      setSaveErrors(errors);
+      setSaveMessage('');
+      return;
+    }
+
+    const keysToSave = Object.keys(parsed);
     const allSucceeded = keysToSave.every(function saveKey(key) {
-      return setConstant(key, draft[key], role);
+      return setConstant(key, parsed[key], role);
     });
 
-    setSaveMessage(allSucceeded ? 'Gespeichert.' : 'Keine Berechtigung.');
+    setSaveErrors([]);
+    if (allSucceeded) {
+      setSaveMessage('Gespeichert.');
+      setDraft(buildDraftFromStore());
+    } else {
+      setSaveMessage('Keine Berechtigung.');
+    }
   }
 
   if (role !== 'admin') {
     return (
       <div className="admin-settings">
         <form onSubmit={handleLoginSubmit}>
+          <label htmlFor="admin-username">Benutzername</label>
           <input
+            id="admin-username"
             type="text"
-            placeholder="Benutzername"
             value={username}
             onChange={function handleUsernameChange(e) { setUsername(e.target.value); }}
           />
+          <label htmlFor="admin-password">Passwort</label>
           <input
+            id="admin-password"
             type="password"
-            placeholder="Passwort"
             value={password}
             onChange={function handlePasswordChange(e) { setPassword(e.target.value); }}
           />
@@ -133,63 +250,69 @@ function AdminSettings() {
       <label htmlFor="admin-default-tile-size">Standard-Rastergröße</label>
       <input
         id="admin-default-tile-size"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.DEFAULT_TILE_SIZE}
-        onChange={function handleDefaultTileSize(e) { updateDraftField('DEFAULT_TILE_SIZE', Number(e.target.value)); }}
+        onChange={function handleDefaultTileSize(e) { updateDraftField('DEFAULT_TILE_SIZE', e.target.value); }}
       />
 
       <label htmlFor="admin-tile-options">Rastergrößen-Optionen (kommagetrennt)</label>
       <input
         id="admin-tile-options"
         type="text"
-        value={draft.TILE_SIZE_OPTIONS.join(', ')}
-        onChange={function handleTileOptions(e) { updateDraftField('TILE_SIZE_OPTIONS', parseSizeList(e.target.value)); }}
+        value={draft.TILE_SIZE_OPTIONS}
+        onChange={function handleTileOptions(e) { updateDraftField('TILE_SIZE_OPTIONS', e.target.value); }}
       />
 
       <label htmlFor="admin-default-speed">Standard-Geschwindigkeit (ms)</label>
       <input
         id="admin-default-speed"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.DEFAULT_SIMULATION_SPEED_MS}
-        onChange={function handleDefaultSpeed(e) { updateDraftField('DEFAULT_SIMULATION_SPEED_MS', Number(e.target.value)); }}
+        onChange={function handleDefaultSpeed(e) { updateDraftField('DEFAULT_SIMULATION_SPEED_MS', e.target.value); }}
       />
 
       <label htmlFor="admin-min-speed">Minimale Geschwindigkeit (ms)</label>
       <input
         id="admin-min-speed"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.MIN_SIMULATION_SPEED_MS}
-        onChange={function handleMinSpeed(e) { updateDraftField('MIN_SIMULATION_SPEED_MS', Number(e.target.value)); }}
+        onChange={function handleMinSpeed(e) { updateDraftField('MIN_SIMULATION_SPEED_MS', e.target.value); }}
       />
 
       <label htmlFor="admin-max-speed">Maximale Geschwindigkeit (ms)</label>
       <input
         id="admin-max-speed"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.MAX_SIMULATION_SPEED_MS}
-        onChange={function handleMaxSpeed(e) { updateDraftField('MAX_SIMULATION_SPEED_MS', Number(e.target.value)); }}
+        onChange={function handleMaxSpeed(e) { updateDraftField('MAX_SIMULATION_SPEED_MS', e.target.value); }}
       />
 
       <label htmlFor="admin-speed-step">Geschwindigkeits-Schrittweite (ms)</label>
       <input
         id="admin-speed-step"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.SIMULATION_SPEED_STEP_MS}
-        onChange={function handleSpeedStep(e) { updateDraftField('SIMULATION_SPEED_STEP_MS', Number(e.target.value)); }}
+        onChange={function handleSpeedStep(e) { updateDraftField('SIMULATION_SPEED_STEP_MS', e.target.value); }}
       />
 
       <label htmlFor="admin-history-length">Maximale History-Länge</label>
       <input
         id="admin-history-length"
-        type="number"
+        type="text"
+        inputMode="numeric"
         value={draft.MAX_HISTORY_LENGTH}
-        onChange={function handleHistoryLength(e) { updateDraftField('MAX_HISTORY_LENGTH', Number(e.target.value)); }}
+        onChange={function handleHistoryLength(e) { updateDraftField('MAX_HISTORY_LENGTH', e.target.value); }}
       />
 
       <fieldset>
         <legend>Texte</legend>
 
-        <label htmlFor="admin-text-title">Titel</label>
+        <label htmlFor="admin-text-title">{UI_TEXT_FIELD_LABELS.appTitle}</label>
         <input
           id="admin-text-title"
           type="text"
@@ -197,7 +320,7 @@ function AdminSettings() {
           onChange={function handleTitle(e) { updateDraftUiText('appTitle', e.target.value); }}
         />
 
-        <label htmlFor="admin-text-start">Start-Knopf</label>
+        <label htmlFor="admin-text-start">{UI_TEXT_FIELD_LABELS.start}</label>
         <input
           id="admin-text-start"
           type="text"
@@ -205,7 +328,7 @@ function AdminSettings() {
           onChange={function handleStartLabel(e) { updateDraftUiText('start', e.target.value); }}
         />
 
-        <label htmlFor="admin-text-stop">Stop-Knopf</label>
+        <label htmlFor="admin-text-stop">{UI_TEXT_FIELD_LABELS.stop}</label>
         <input
           id="admin-text-stop"
           type="text"
@@ -213,7 +336,7 @@ function AdminSettings() {
           onChange={function handleStopLabel(e) { updateDraftUiText('stop', e.target.value); }}
         />
 
-        <label htmlFor="admin-text-reset">Reset-Knopf</label>
+        <label htmlFor="admin-text-reset">{UI_TEXT_FIELD_LABELS.reset}</label>
         <input
           id="admin-text-reset"
           type="text"
@@ -222,8 +345,16 @@ function AdminSettings() {
         />
       </fieldset>
 
+      {saveErrors.length > 0 && (
+        <ul className="admin-settings-error">
+          {saveErrors.map(function renderError(error, index) {
+            return <li key={index}>{error}</li>;
+          })}
+        </ul>
+      )}
+
       <button onClick={handleSaveAll}>Alle Änderungen speichern</button>
-      <button onClick={logout}>Abmelden</button>
+      <button onClick={onLogout}>Abmelden</button>
       {saveMessage && <p>{saveMessage}</p>}
     </div>
   );

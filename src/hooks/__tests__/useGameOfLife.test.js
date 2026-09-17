@@ -150,4 +150,15 @@ describe('useGameOfLife', function useGameOfLifeTests() {
 
     expect(result.current.speedMs).toBe(150);
   });
+
+  it('does not change speedMs when an unrelated store value is updated', function testUnrelatedStoreChangeIgnored() {
+    const { result } = renderHook(useGameOfLife);
+    const speedBefore = result.current.speedMs;
+
+    act(function changeUnrelatedValue() {
+      setConstant('MAX_HISTORY_LENGTH', 5, 'admin');
+    });
+
+    expect(result.current.speedMs).toBe(speedBefore);
+  });
 });

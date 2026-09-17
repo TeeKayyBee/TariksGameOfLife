@@ -223,16 +223,23 @@ button:disabled {
   }
 }
 
-/* Deliberately understated - the admin area isn't meant to compete
-   visually with the main game controls. */
+/**
+ * Deliberately understated - the admin area isn't meant to compete
+ * visually with the main game controls. Uses a dimmed but distinct
+ * text/border color instead of opacity: opacity would fade the
+ * background too, further reducing contrast against the page
+ * background beyond what's intended for a still-legible button.
+ */
 .admin-toggle {
   font-size: 12px;
   padding: 6px 12px;
-  opacity: 0.6;
+  color: #aaa;
+  border-color: #3a3a3a;
 }
 
 .admin-toggle:hover:not(:disabled) {
-  opacity: 1;
+  color: #f0f0f0;
+  border-color: #666;
 }
 
 .admin-settings {
