@@ -62,16 +62,17 @@ h1 {
  * the selected tile size.
  */
 .grid {
-  --cell-size: clamp(10px, calc(min(90vw, 60vh) / var(--grid-size)), 32px);
+  --cell-size: clamp(4px, calc(min(90vw, 60vh) / var(--grid-size)), 32px);
   display: grid;
   grid-template-columns: repeat(var(--grid-size), var(--cell-size));
   grid-template-rows: repeat(var(--grid-size), var(--cell-size));
   width: fit-content;
   max-width: 95vw;
+  max-height: 70vh;
+  overflow: auto;
   border-top: 1px solid var(--color-border);
   border-left: 1px solid var(--color-border);
 }
-
 /**
  * Cells are native <button> elements now (for accessibility), so
  * default button chrome (padding, border-radius) is reset here.

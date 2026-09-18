@@ -58,14 +58,21 @@ function appendToHistory(history, gridToStore) {
  */
 function useGameOfLife() {
   /**
-   * Subscribes to the store's default speed specifically. This is
-   * what lets an admin's change reach an already-running simulation:
-   * the effect below reacts whenever this synced value changes.
+   * Subscribes to the store's default speed and default tile size.
+   * This is what lets an admin's change reach an already-running
+   * simulation - the effects below react whenever these synced
+   * values change.
    */
   const storeDefaultSpeed = useSyncExternalStore(
     subscribeToConstants,
     function getDefaultSpeedSnapshot() {
       return getConstant('DEFAULT_SIMULATION_SPEED_MS');
+    }
+  );
+  const storeDefaultTileSize = useSyncExternalStore(
+    subscribeToConstants,
+    function getDefaultTileSizeSnapshot() {
+      return getConstant('DEFAULT_TILE_SIZE');
     }
   );
 
@@ -89,15 +96,30 @@ function useGameOfLife() {
    * to an already-running simulation. Deliberately only listens to
    * storeDefaultSpeed (not every store change), so it does not fire
    * on unrelated admin edits (e.g. changing a button label).
-   *
-   * Note the asymmetry with DEFAULT_TILE_SIZE: that one is only read
-   * once at mount/reset, never live-applied, because changing the
-   * grid size destructively wipes the current pattern - unlike
-   * speed, which can change without losing any game state.
    */
   useEffect(function applyAdminSpeedChangeLive() {
-    setSpeedMs(storeDefaultSpeed);
+    setSpeedMs(function updateSpeedIfChanged(prevSpeed) {
+      return prevSpeed === storeDefaultSpeed ? prevSpeed : storeDefaultSpeed;
+    });
   }, [storeDefaultSpeed]);
+
+  /**
+   * Applies an admin's change to the default tile size immediately,
+   * even to an already-running simulation. This is destructive by
+   * necessity - a grid of a different size cannot be meaningfully
+   * carried over - so it resets the grid, history and running state,
+   * exactly like a manual handleTileSizeChange call would.
+   */
+  useEffect(function applyAdminTileSizeChangeLive() {
+    setTileSize(function updateTileSizeIfChanged(prevTileSize) {
+      if (prevTileSize === storeDefaultTileSize) return prevTileSize;
+
+      setIsRunning(false);
+      setGrid(createEmptyGrid(storeDefaultTileSize));
+      setHistory([]);
+      return storeDefaultTileSize;
+    });
+  }, [storeDefaultTileSize]);
 
   /**
    * Advances the simulation by exactly one generation.
@@ -197,8 +219,8 @@ function useGameOfLife() {
   }
 
   /**
-   * Changes the grid size. This necessarily resets the grid and history,
-   * since a grid of a different size cannot be meaningfully carried over.
+   * Changes the grid size in response to the user manually picking a
+   * different option in the tile size dropdown.
    * @param {number} newSize
    */
   const handleTileSizeChange = useCallback(function handleTileSizeChange(newSize) {

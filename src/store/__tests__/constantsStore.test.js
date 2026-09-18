@@ -70,4 +70,30 @@ describe('constantsStore', function constantsStoreTests() {
     expect(wasAllowed).toBe(false);
     expect(getConstant('UI_TEXT')).toEqual(originalText);
   });
+   it('rejects a DEFAULT_TILE_SIZE above MAX_TILE_SIZE, even bypassing the admin form entirely', function testStoreEnforcesTileSizeCap() {
+    const wasAllowed = setConstant('DEFAULT_TILE_SIZE', 999, 'admin');
+
+    expect(wasAllowed).toBe(false);
+    expect(getConstant('DEFAULT_TILE_SIZE')).toBe(15);
+  });
+
+  it('rejects TILE_SIZE_OPTIONS containing a value above MAX_TILE_SIZE', function testStoreEnforcesTileSizeOptionsCap() {
+    const wasAllowed = setConstant('TILE_SIZE_OPTIONS', [10, 999], 'admin');
+
+    expect(wasAllowed).toBe(false);
+    expect(getConstant('TILE_SIZE_OPTIONS')).toEqual([10, 15, 20, 25]);
+  });
+
+  it('rejects an empty TILE_SIZE_OPTIONS array', function testStoreRejectsEmptyTileSizeOptions() {
+    const wasAllowed = setConstant('TILE_SIZE_OPTIONS', [], 'admin');
+
+    expect(wasAllowed).toBe(false);
+  });
+
+  it('rejects a non-integer speed value', function testStoreRejectsNonIntegerSpeed() {
+    const wasAllowed = setConstant('DEFAULT_SIMULATION_SPEED_MS', 300.5, 'admin');
+
+    expect(wasAllowed).toBe(false);
+    expect(getConstant('DEFAULT_SIMULATION_SPEED_MS')).toBe(300);
+  });
 });

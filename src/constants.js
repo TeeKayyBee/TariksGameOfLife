@@ -36,3 +36,6 @@ export const NEIGHBOR_OFFSETS = [
 
 /** Probability (0-1) that a cell starts alive when randomizing the grid. */
 export const RANDOM_ALIVE_PROBABILITY = 0.3;
+
+/** Upper bound for any admin-configured tile size, to keep the grid renderable and usable on small screens. */
+export const MAX_TILE_SIZE = 50;

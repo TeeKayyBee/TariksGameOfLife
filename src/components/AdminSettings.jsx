@@ -17,6 +17,8 @@
 
 import { useState } from 'react';
 import { getAllConstants, setConstant } from '../store/constantsStore';
+import { isPositiveInteger, isValidTileSize, isNonEmptyString } from '../helpers/validation';
+import { MAX_TILE_SIZE } from '../constants';
 
 /** Maps the UI_TEXT fields this form exposes to their display labels, used both for form labels and validation error messages. */
 const UI_TEXT_FIELD_LABELS = {
@@ -42,17 +44,16 @@ export function parseSizeList(text) {
     .map(function trimAndParse(part) {
       return Number(part.trim());
     })
-    .filter(function isValidPositiveInteger(n) {
-      return Number.isInteger(n) && n > 0;
-    });
+    .filter(isPositiveInteger);
 }
 
 /**
- * Parses a raw form field into a positive integer, or null if the
- * field is empty, not a number, not an integer, or not positive.
- * Returning null (rather than 0 or NaN) lets the caller distinguish
- * "invalid" from "a real value of zero" and report a proper error
- * instead of silently accepting a broken setting.
+ * Parses a raw form field into a positive integer using the shared
+ * isPositiveInteger predicate, or null if the field is empty or the
+ * parsed value fails that check. Returning null (rather than 0 or
+ * NaN) lets the caller distinguish "invalid" from "a real value of
+ * zero" and report a proper error instead of silently accepting a
+ * broken setting.
  * @param {string} text
  * @returns {number | null}
  */
@@ -60,8 +61,7 @@ function parsePositiveInteger(text) {
   const trimmed = text.trim();
   if (trimmed === '') return null;
   const parsed = Number(trimmed);
-  if (!Number.isInteger(parsed) || parsed <= 0) return null;
-  return parsed;
+  return isPositiveInteger(parsed) ? parsed : null;
 }
 
 /**
@@ -97,8 +97,14 @@ function validateDraft(draft) {
   const parsed = {};
 
   const tileSizeOptions = parseSizeList(draft.TILE_SIZE_OPTIONS);
+  const oversizedOptions = tileSizeOptions.filter(function isOversized(size) {
+    return !isValidTileSize(size);
+  });
+
   if (tileSizeOptions.length === 0) {
     errors.push('Rastergrößen-Optionen: mindestens eine gültige Zahl angeben.');
+  } else if (oversizedOptions.length > 0) {
+    errors.push(`Rastergrößen-Optionen: maximal ${MAX_TILE_SIZE} erlaubt (zu groß: ${oversizedOptions.join(', ')}).`);
   } else {
     parsed.TILE_SIZE_OPTIONS = tileSizeOptions;
   }
@@ -106,6 +112,8 @@ function validateDraft(draft) {
   const defaultTileSize = parsePositiveInteger(draft.DEFAULT_TILE_SIZE);
   if (defaultTileSize === null) {
     errors.push('Standard-Rastergröße: gültige positive Zahl erforderlich.');
+  } else if (!isValidTileSize(defaultTileSize)) {
+    errors.push(`Standard-Rastergröße: maximal ${MAX_TILE_SIZE} erlaubt.`);
   } else {
     parsed.DEFAULT_TILE_SIZE = defaultTileSize;
   }
@@ -140,13 +148,13 @@ function validateDraft(draft) {
   if (stepSpeed !== null) parsed.SIMULATION_SPEED_STEP_MS = stepSpeed;
   if (historyLength !== null) parsed.MAX_HISTORY_LENGTH = historyLength;
 
-  Object.keys(UI_TEXT_FIELD_LABELS).forEach(function checkUiTextField(field) {
-    if (draft.UI_TEXT[field].trim() === '') {
+ Object.keys(UI_TEXT_FIELD_LABELS).forEach(function checkUiTextField(field) {
+    if (!isNonEmptyString(draft.UI_TEXT[field])) {
       errors.push(`${UI_TEXT_FIELD_LABELS[field]}: darf nicht leer sein.`);
     }
   });
-  if (errors.length === 0 || Object.keys(UI_TEXT_FIELD_LABELS).every(function fieldIsFilled(field) {
-    return draft.UI_TEXT[field].trim() !== '';
+  if (Object.keys(UI_TEXT_FIELD_LABELS).every(function fieldIsFilled(field) {
+    return isNonEmptyString(draft.UI_TEXT[field]);
   })) {
     parsed.UI_TEXT = draft.UI_TEXT;
   }
@@ -247,7 +255,7 @@ function AdminSettings({ role, onLogin, onLogout }) {
     <div className="admin-settings">
       <p>Angemeldet als Admin.</p>
 
-      <label htmlFor="admin-default-tile-size">Standard-Rastergröße</label>
+      <label htmlFor="admin-default-tile-size">Standard-Rastergröße (max. {MAX_TILE_SIZE})</label>
       <input
         id="admin-default-tile-size"
         type="text"
@@ -256,7 +264,7 @@ function AdminSettings({ role, onLogin, onLogout }) {
         onChange={function handleDefaultTileSize(e) { updateDraftField('DEFAULT_TILE_SIZE', e.target.value); }}
       />
 
-      <label htmlFor="admin-tile-options">Rastergrößen-Optionen (kommagetrennt)</label>
+      <label htmlFor="admin-tile-options">Rastergrößen-Optionen (kommagetrennt, max. {MAX_TILE_SIZE})</label>
       <input
         id="admin-tile-options"
         type="text"

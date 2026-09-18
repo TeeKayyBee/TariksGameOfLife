@@ -66,13 +66,13 @@ describe('AdminSettings', function AdminSettingsTests() {
     expect(screen.getByText('Login fehlgeschlagen.')).toBeInTheDocument();
   });
 
-  it('shows the settings form for an admin', function testAdminSeesSettingsForm() {
+   it('shows the settings form for an admin', function testAdminSeesSettingsForm() {
     render(<AdminSettings role="admin" onLogin={vi.fn()} onLogout={vi.fn()} />);
 
-    expect(screen.getByLabelText('Standard-Rastergröße')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Standard-Rastergröße/)).toBeInTheDocument();
     expect(screen.getByText('Alle Änderungen speichern')).toBeInTheDocument();
   });
-
+  
   it('saves a valid change to the store', function testValidSaveWritesToStore() {
     render(<AdminSettings role="admin" onLogin={vi.fn()} onLogout={vi.fn()} />);
 
@@ -85,10 +85,10 @@ describe('AdminSettings', function AdminSettingsTests() {
     expect(screen.getByText('Gespeichert.')).toBeInTheDocument();
   });
 
-  it('rejects an empty tile size options list and does not touch the store', function testEmptyTileOptionsRejected() {
+    it('rejects an empty tile size options list and does not touch the store', function testEmptyTileOptionsRejected() {
     render(<AdminSettings role="admin" onLogin={vi.fn()} onLogout={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('Rastergrößen-Optionen (kommagetrennt)'), {
+    fireEvent.change(screen.getByLabelText(/Rastergrößen-Optionen/), {
       target: { value: '' },
     });
     fireEvent.click(screen.getByText('Alle Änderungen speichern'));
@@ -135,5 +135,31 @@ describe('AdminSettings', function AdminSettingsTests() {
 
     expect(screen.getByText('Start-Knopf: darf nicht leer sein.')).toBeInTheDocument();
     expect(getConstant('UI_TEXT').start).toBe('Start');
+  });
+
+  it('rejects a default tile size above the maximum', function testDefaultTileSizeTooLarge() {
+    render(<AdminSettings role="admin" onLogin={vi.fn()} onLogout={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/Standard-Rastergröße/), {
+      target: { value: '75' },
+    });
+    fireEvent.click(screen.getByText('Alle Änderungen speichern'));
+
+    expect(screen.getByText('Standard-Rastergröße: maximal 50 erlaubt.')).toBeInTheDocument();
+    expect(getConstant('DEFAULT_TILE_SIZE')).toBe(15);
+  });
+
+  it('rejects tile size options containing a value above the maximum', function testTileOptionTooLarge() {
+    render(<AdminSettings role="admin" onLogin={vi.fn()} onLogout={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/Rastergrößen-Optionen/), {
+      target: { value: '10, 15, 75' },
+    });
+    fireEvent.click(screen.getByText('Alle Änderungen speichern'));
+
+    expect(
+      screen.getByText('Rastergrößen-Optionen: maximal 50 erlaubt (zu groß: 75).')
+    ).toBeInTheDocument();
+    expect(getConstant('TILE_SIZE_OPTIONS')).toEqual([10, 15, 20, 25]);
   });
 });

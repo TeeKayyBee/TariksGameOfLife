@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import useGameOfLife from '../useGameOfLife';
 import { getConstant, resetConstantsForTesting, setConstant } from '../../store/constantsStore';
+import { createEmptyGrid } from '../../helpers/gameLogic';
 
 describe('useGameOfLife', function useGameOfLifeTests() {
   beforeEach(function setup() {
@@ -160,5 +161,40 @@ describe('useGameOfLife', function useGameOfLifeTests() {
     });
 
     expect(result.current.speedMs).toBe(speedBefore);
+  });
+
+    it('immediately applies an admin tile size change to a running simulation', function testLiveTileSizeOverride() {
+    const { result } = renderHook(useGameOfLife);
+
+    act(function changeAdminDefault() {
+      setConstant('DEFAULT_TILE_SIZE', 10, 'admin');
+    });
+
+    expect(result.current.tileSize).toBe(10);
+    expect(result.current.grid).toHaveLength(10);
+  });
+
+  it('resets a running simulation when the admin changes the default tile size', function testLiveTileSizeStopsSimulation() {
+    const { result } = renderHook(useGameOfLife);
+
+    act(function createBlinkerAndStart() {
+      result.current.handleCellClick(2, 1);
+      result.current.handleCellClick(2, 2);
+      result.current.handleCellClick(2, 3);
+      result.current.handleStart();
+    });
+
+    act(function changeAdminDefault() {
+      setConstant('DEFAULT_TILE_SIZE', 10, 'admin');
+    });
+
+    expect(result.current.isRunning).toBe(false);
+    expect(result.current.canStepForward).toBe(false);
+  });
+
+  it('does not reset the grid on initial mount', function testNoResetOnMount() {
+    const { result } = renderHook(useGameOfLife);
+
+    expect(result.current.grid).toEqual(createEmptyGrid(getConstant('DEFAULT_TILE_SIZE')));
   });
 });

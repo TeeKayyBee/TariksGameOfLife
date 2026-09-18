@@ -8,7 +8,17 @@
  * getConstant() / getAllConstants() / setConstant() below. Includes
  * a subscribe/notify mechanism so React components can react to
  * changes via useSyncExternalStore.
+ *
+ * setConstant() also enforces per-key structural validation using
+ * the shared predicates from helpers/validation.js - the same
+ * predicates AdminSettings.jsx uses for its form validation. This
+ * closes a gap where any other future caller of setConstant() (a
+ * second admin UI, a test, a console call) could otherwise write an
+ * invalid value by bypassing the form's own checks, while keeping
+ * the definition of "valid" in exactly one place.
  */
+
+import { isPositiveInteger, isValidTileSize, isNonEmptyString } from '../helpers/validation';
 
 const ADMIN_ROLE = 'admin';
 
@@ -34,23 +44,49 @@ const INITIAL_DATA = {
 };
 
 /**
+ * Per-key structural validators. Each function takes the proposed
+ * new value and returns true if it is acceptable in isolation.
+ *
+ * Deliberately single-value checks only - no cross-key rules like
+ * "min < max" live here, since setConstant only ever sees one key's
+ * new value at a time and would otherwise reject valid combinations
+ * mid-save. Cross-key rules remain the caller's responsibility
+ * (see AdminSettings.jsx's validateDraft).
+ */
+const VALIDATORS = {
+  DEFAULT_TILE_SIZE: isValidTileSize,
+  TILE_SIZE_OPTIONS: function isValidTileSizeOptions(value) {
+    return (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.every(isValidTileSize)
+    );
+  },
+  DEFAULT_SIMULATION_SPEED_MS: isPositiveInteger,
+  MIN_SIMULATION_SPEED_MS: isPositiveInteger,
+  MAX_SIMULATION_SPEED_MS: isPositiveInteger,
+  SIMULATION_SPEED_STEP_MS: isPositiveInteger,
+  MAX_HISTORY_LENGTH: isPositiveInteger,
+  UI_TEXT: function isValidUiText(value) {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      Object.values(value).every(isNonEmptyString)
+    );
+  },
+};
+
+/**
  * Creates a fresh, fully independent copy of the initial data.
  * structuredClone performs a deep copy, so nested values like
  * TILE_SIZE_OPTIONS (array) and UI_TEXT (object) get their own new
- * references too - not just the outer object. Without this, `data`
- * and `INITIAL_DATA` would share the same nested array/object
- * instances, meaning a future direct mutation of a nested value
- * (even accidental) would corrupt INITIAL_DATA itself, breaking
- * resetConstantsForTesting()'s guarantee of returning to a true
- * original state.
+ * references too - not just the outer object.
  * @returns {object}
  */
 function cloneInitialData() {
   return structuredClone(INITIAL_DATA);
 }
 
-// Module-private state. Deliberately not exported - this is the
-// entire point of the encapsulation.
 let data = cloneInitialData();
 
 const listeners = new Set();
@@ -63,8 +99,6 @@ function notifyListeners() {
 
 /**
  * Registers a callback to be invoked after every successful write.
- * Returns an unsubscribe function, matching the shape
- * useSyncExternalStore expects.
  * @param {() => void} listener
  * @returns {() => void} unsubscribe
  */
@@ -94,7 +128,8 @@ export function getAllConstants() {
 }
 
 /**
- * Updates a single config value. Only permitted for the admin role.
+ * Updates a single config value. Only permitted for the admin role,
+ * and only if the value passes this key's validator (if one exists).
  * Notifies all subscribers on success, so every component reading
  * this value via useSyncExternalStore re-renders immediately.
  * @param {string} key
@@ -109,6 +144,12 @@ export function setConstant(key, value, role) {
   }
   if (!(key in data)) {
     console.warn(`Unknown constant "${key}" - ignoring write.`);
+    return false;
+  }
+
+  const validator = VALIDATORS[key];
+  if (validator && !validator(value)) {
+    console.warn(`Invalid value for "${key}" - write rejected.`);
     return false;
   }
 
